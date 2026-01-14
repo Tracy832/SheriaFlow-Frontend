@@ -1,73 +1,65 @@
-# React + TypeScript + Vite
+# SheriaFlow - Payroll & Compliance System 🇰🇪
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**SheriaFlow** is a modern, compliant payroll management dashboard designed for Kenyan businesses. It streamlines employee management, salary processing, and statutory reporting (KRA, NSSF, SHIF/NHIF, and Housing Levy).
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+* **📊 Interactive Dashboard:** Real-time overview of payroll costs, active employees, and compliance status.
+* **👥 Employee Management:** Track employee details, roles, and employment status.
+* **💳 Payroll Processing:** Automated calculation of Basic Pay, Allowances, and Statutory Deductions.
+* **📄 Statutory Reports:** Download ready-to-file reports for:
+    * KRA PAYE (P10)
+    * NSSF Contributions
+    * SHIF / NHIF Deductions
+    * Affordable Housing Levy
+* **⚙️ Tax Configuration:** Toggle and configure statutory rates (e.g., enable/disable Housing Levy).
+* **🔐 Authentication:** Secure Login and Registration pages.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Frontend Framework:** React (Vite)
+* **Language:** TypeScript
+* **Styling:** Tailwind CSS
+* **Router:** React Router DOM
 
-## Expanding the ESLint configuration
+## 📦 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Follow these steps to set up the project locally.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+* Node.js (v18 or higher recommended)
+* npm or yarn
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Installation
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1.  **Clone the repository**
+    ```bash
+    git clone [https://github.com/Tracy832/SheriaFlow-Frontend.git](https://github.com/Tracy832/SheriaFlow-Frontend.git)
+    cd SheriaFlow-Frontend
+    ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3.  **Run the development server**
+    ```bash
+    npm run dev
+    ```
+
+4.  **Open in Browser**
+    Visit `http://localhost:5173` to view the application.
+
+## 📂 Project Structure
+
+```text
+src/
+├── components/
+│   ├── common/       # Reusable UI components (StatCards, Buttons)
+│   ├── dashboard/    # Widgets for the main dashboard view
+│   ├── layout/       # Sidebar and Header components
+│   └── pages/        # Full page views (Employees, Payroll, Reports, Settings)
+├── App.tsx           # Main Route definitions
+└── main.tsx          # Entry point
