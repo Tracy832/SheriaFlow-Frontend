@@ -1,216 +1,223 @@
-// src/components/pages/Reports.tsx
+import { useState } from 'react';
 import Header from '../layout/Header';
+import { 
+  FileSpreadsheet, FileText, Download, Filter, 
+  Calendar, CheckCircle2, Clock, 
+  Search, ArrowUpRight, File
+} from 'lucide-react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Cell 
+} from 'recharts';
+
+// 1. Data Types
+interface ReportFile {
+  id: number;
+  name: string;
+  category: string;
+  date: string;
+  size: string;
+  type: 'EXCEL' | 'PDF' | 'CSV' | 'ZIP';
+  status: 'Ready' | 'Archived';
+}
+
+// 2. Mock Data
+const reportsList: ReportFile[] = [
+  { id: 101, name: 'Bank Transfer File (EFT)', category: 'Payments', date: 'Jan 28, 2026', size: '45 KB', type: 'EXCEL', status: 'Ready' },
+  { id: 102, name: 'Employee Payslips (Bulk)', category: 'Payslips', date: 'Jan 28, 2026', size: '12.4 MB', type: 'ZIP', status: 'Ready' },
+  { id: 103, name: 'KRA PAYE Returns (P10)', category: 'Tax', date: 'Jan 20, 2026', size: '1.2 MB', type: 'PDF', status: 'Ready' },
+  { id: 104, name: 'NSSF Contributions', category: 'Compliance', date: 'Jan 15, 2026', size: '850 KB', type: 'CSV', status: 'Ready' },
+  { id: 105, name: 'SHIF / NHIF Report', category: 'Compliance', date: 'Jan 15, 2026', size: '1.4 MB', type: 'EXCEL', status: 'Archived' },
+  { id: 106, name: 'Housing Levy Summary', category: 'Tax', date: 'Jan 15, 2026', size: '600 KB', type: 'PDF', status: 'Ready' },
+];
+
+const chartData = [
+  { month: 'Aug', amount: 4800000 },
+  { month: 'Sep', amount: 4900000 },
+  { month: 'Oct', amount: 5100000 },
+  { month: 'Nov', amount: 4500000 },
+  { month: 'Dec', amount: 5800000 }, 
+  { month: 'Jan', amount: 5200000 },
+];
 
 const Reports = () => {
-  // 1. Updated Data: Added specific 'tooltip' messages for each file
-  const reportsList = [
-    { 
-      id: 101, 
-      name: 'Bank Transfer File (EFT)', 
-      date: 'Jan 28, 2026', 
-      size: '45 KB', 
-      type: 'Excel',
-      tooltip: 'Download Transfer List' 
-    },
-    { 
-      id: 102, 
-      name: 'Employee Payslips (Bulk)', 
-      date: 'Jan 28, 2026', 
-      size: '12.4 MB', 
-      type: 'ZIP',
-      tooltip: 'Download PDF Bundle' 
-    },
-    { 
-      id: 1, 
-      name: 'KRA PAYE Returns (P10)', 
-      date: 'Jan 2026', 
-      size: '1.2 MB', 
-      type: 'PDF',
-      tooltip: 'Download For iTax' 
-    },
-    { 
-      id: 2, 
-      name: 'NSSF Contributions', 
-      date: 'Jan 2026', 
-      size: '850 KB', 
-      type: 'CSV',
-      tooltip: 'Download Report' 
-    },
-    { 
-      id: 3, 
-      name: 'SHIF / NHIF Report', 
-      date: 'Jan 2026', 
-      size: '1.4 MB', 
-      type: 'Excel',
-      tooltip: 'Download Report' 
-    },
-    { 
-      id: 4, 
-      name: 'Housing Levy Summary', 
-      date: 'Jan 2026', 
-      size: '600 KB', 
-      type: 'PDF',
-      tooltip: 'Download Report' 
-    },
-  ];
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
-  // 2. Chart Data
-  const chartData = [
-    { month: 'Aug', height: 'h-24', amount: '4.8M', color: 'bg-slate-300' },
-    { month: 'Sep', height: 'h-28', amount: '4.9M', color: 'bg-slate-300' },
-    { month: 'Oct', height: 'h-32', amount: '5.1M', color: 'bg-slate-300' },
-    { month: 'Nov', height: 'h-20', amount: '4.5M', color: 'bg-slate-300' },
-    { month: 'Dec', height: 'h-40', amount: '5.8M', color: 'bg-emerald-500' },
-    { month: 'Jan', height: 'h-36', amount: '5.2M', color: 'bg-slate-800' },
-  ];
+  const getFileIcon = (type: string) => {
+    switch(type) {
+      case 'EXCEL': return <FileSpreadsheet className="text-emerald-600" size={20} />;
+      case 'PDF': return <FileText className="text-red-600" size={20} />;
+      case 'CSV': return <FileSpreadsheet className="text-green-600" size={20} />;
+      case 'ZIP': return <File className="text-amber-600" size={20} />;
+      default: return <FileText className="text-slate-600" size={20} />;
+    }
+  };
 
   return (
-    <div className="p-8">
+    <div className="p-8 space-y-8 max-w-[1600px] mx-auto">
       <Header 
         title="Reports" 
-        subtitle="Wednesday, 14 January 2026"
+        subtitle="Manage compliance documents and financial summaries"
         user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
       />
 
-      <div className="space-y-8">
+      {/* Control Bar */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+         <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+               <Calendar size={16} className="text-slate-500" />
+               <select 
+                 value={selectedYear} 
+                 onChange={(e) => setSelectedYear(e.target.value)}
+                 className="bg-transparent text-sm font-medium text-slate-700 focus:outline-none cursor-pointer"
+               >
+                 <option value="2026">2026</option>
+                 <option value="2025">2025</option>
+               </select>
+            </div>
+            <div className="h-6 w-px bg-slate-200 mx-2 hidden md:block"></div>
+            <div className="flex gap-2">
+               {['All', 'Tax', 'Payslips', 'Compliance'].map((filter) => (
+                 <button key={filter} className="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
+                   {filter}
+                 </button>
+               ))}
+            </div>
+         </div>
+         <div className="relative w-full md:w-64">
+            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+            <input type="text" placeholder="Search reports..." className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
+         </div>
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* SECTION 1: Period Selector */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <div className="mb-4">
-             <h3 className="font-bold text-slate-900 text-lg">Reports & Documents</h3>
-             <p className="text-slate-500 text-sm">Download payroll reports and compliance documents</p>
-          </div>
-          <div className="pt-4 border-t border-slate-100">
-            <h4 className="font-semibold text-slate-800 mb-3">Select Reporting Period</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500 flex items-center gap-1"><span>📅</span> Month</label>
-                <select className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:border-emerald-500 bg-white">
-                  <option>January</option>
-                  <option>December</option>
-                  <option>November</option>
-                </select>
+        {/* Chart */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+           <div className="flex justify-between items-start mb-6">
+              <div>
+                 <h3 className="text-lg font-bold text-slate-900">Payroll Cost Analysis</h3>
+                 <p className="text-sm text-slate-500 mt-1">Total disbursement trends over the last 6 months</p>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-slate-500 flex items-center gap-1"><span>🗓️</span> Year</label>
-                <select className="w-full p-2.5 border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:border-emerald-500 bg-white">
-                  <option>2026</option>
-                  <option>2025</option>
-                  <option>2024</option>
-                </select>
-              </div>
-            </div>
-          </div>
+              <button className="text-emerald-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:underline">
+                 Detailed Report <ArrowUpRight size={14} />
+              </button>
+           </div>
+           
+           <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                 <BarChart data={chartData} barSize={40}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                    <YAxis 
+                       axisLine={false} 
+                       tickLine={false} 
+                       tick={{fill: '#64748b', fontSize: 12}} 
+                       tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
+                    />
+                    <Tooltip 
+                       cursor={{fill: '#f8fafc'}}
+                       contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                       
+                       // --- FIX IS HERE: Added 'undefined' to the type union ---
+                       formatter={(value: number | string | undefined) => [`KES ${Number(value || 0).toLocaleString()}`, 'Total Cost']}
+                    />
+                    <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
+                      {chartData.map((_, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={index === hoveredBar ? '#10b981' : '#1e293b'} 
+                          onMouseEnter={() => setHoveredBar(index)}
+                          onMouseLeave={() => setHoveredBar(null)}
+                        />
+                      ))}
+                    </Bar>
+                 </BarChart>
+              </ResponsiveContainer>
+           </div>
         </div>
 
-        {/* SECTION 2: Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Chart */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div className="mb-8 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 text-lg">Payroll Cost History</h3>
-              <span className="text-sm text-slate-500">Aug 2025 - Jan 2026</span>
-            </div>
-            <div className="flex items-end justify-between h-64 px-4 border-b border-slate-100 pb-4">
-              {chartData.map((item, index) => (
-                <div key={index} className="flex flex-col items-center gap-2 group cursor-pointer">
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded mb-1">
-                    {item.amount}
-                  </span>
-                  <div className={`w-12 rounded-t-lg transition-all duration-300 hover:opacity-80 ${item.height} ${item.color}`}></div>
-                  <span className="text-sm font-medium text-slate-500">{item.month}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Downloads List with Tooltips */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h3 className="font-bold text-slate-800 text-lg mb-1">Downloads</h3>
-            <p className="text-slate-500 text-sm mb-6">Payslips, EFT files & Returns</p>
-            
-            <div className="space-y-4">
+        {/* Recent Files */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+           <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Documents</h3>
+           <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
               {reportsList.map((file) => (
-                <div key={file.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50 transition-all group relative">
-                  
-                  {/* The Tooltip (Hidden by default, shown on hover) */}
-                  <div className="absolute -top-10 right-0 bg-slate-800 text-white text-xs px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                    {file.tooltip}
-                    {/* Tiny arrow pointing down */}
-                    <div className="absolute top-full right-4 border-4 border-transparent border-t-slate-800"></div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold ${
-                      file.type === 'PDF' ? 'bg-red-100 text-red-700' : 
-                      file.type === 'Excel' ? 'bg-green-100 text-green-700' :
-                      file.type === 'ZIP' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {file.type}
+                 <div key={file.id} className="group p-3 rounded-lg border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all flex items-center justify-between cursor-pointer">
+                    <div className="flex items-center gap-3">
+                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
+                          file.type === 'PDF' ? 'bg-red-50 border-red-100' :
+                          file.type === 'EXCEL' ? 'bg-emerald-50 border-emerald-100' :
+                          file.type === 'ZIP' ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'
+                       }`}>
+                          {getFileIcon(file.type)}
+                       </div>
+                       <div>
+                          <p className="text-sm font-semibold text-slate-700 group-hover:text-emerald-700">{file.name}</p>
+                          <p className="text-xs text-slate-400">{file.date} • {file.size}</p>
+                       </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-slate-800 text-sm group-hover:text-emerald-800">{file.name}</p>
-                      <p className="text-xs text-slate-400">{file.date} • {file.size}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Download Button */}
-                  <button className="text-slate-400 hover:text-emerald-600 transition-colors">
-                    ⬇
-                  </button>
-                </div>
+                    <button className="text-slate-400 hover:text-emerald-600 transition-colors p-2 rounded-full hover:bg-white">
+                       <Download size={18} />
+                    </button>
+                 </div>
               ))}
-            </div>
-          </div>
+           </div>
+           <button className="w-full mt-4 py-2 text-sm font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors">
+              View All Documents
+           </button>
         </div>
+      </div>
 
-        {/* SECTION 3: Report Summary Footer */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">📂</div>
-            <div>
-              <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">Total Reports</p>
-              <p className="text-xl font-bold text-slate-900">1,248</p>
+      {/* Summary Footer */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+               <Filter size={20} />
             </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-xl">⬇️</div>
             <div>
-              <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">Last Download</p>
-              <p className="text-xl font-bold text-slate-900">Just now</p>
+               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Reports</p>
+               <p className="text-xl font-bold text-slate-900">1,248</p>
             </div>
-          </div>
+         </div>
 
-          {/* Compliance Status: Percentage */}
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">🛡️</div>
+         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+               <CheckCircle2 size={20} />
+            </div>
             <div className="w-full">
-              <p className="text-slate-500 text-xs font-medium uppercase tracking-wider mb-1">Compliance Status</p>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold text-slate-900">100%</span>
-                <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">Excellent</span>
-              </div>
-              {/* Mini Progress Bar */}
-              <div className="w-full bg-emerald-100 h-1.5 rounded-full mt-1.5">
-                <div className="bg-emerald-500 h-1.5 rounded-full w-full"></div>
-              </div>
+               <div className="flex justify-between items-center mb-1">
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Compliance</p>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-1.5 rounded">100%</span>
+               </div>
+               <div className="w-full bg-emerald-100 h-1.5 rounded-full">
+                  <div className="bg-emerald-500 h-1.5 rounded-full w-full"></div>
+               </div>
             </div>
-          </div>
+         </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xl">⏳</div>
+         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+               <Clock size={20} />
+            </div>
             <div>
-              <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">Next Deadline</p>
-              <p className="text-lg font-bold text-slate-900">Feb 09, 2026</p>
-              <p className="text-xs text-red-500 font-medium">PAYE Returns</p>
+               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Next Deadline</p>
+               <p className="text-lg font-bold text-slate-900">Feb 09</p>
+               <p className="text-xs text-red-500 font-medium">PAYE Returns</p>
             </div>
-          </div>
+         </div>
 
-        </div>
-
+         <div className="bg-linear-to-br from-slate-900 to-slate-800 p-5 rounded-xl shadow-sm flex items-center justify-between text-white relative overflow-hidden group cursor-pointer">
+            <div className="relative z-10">
+               <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Quick Action</p>
+               <p className="font-bold text-lg">Generate P10</p>
+            </div>
+            <div className="relative z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+               <Download size={20} />
+            </div>
+            <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full"></div>
+         </div>
       </div>
     </div>
   );

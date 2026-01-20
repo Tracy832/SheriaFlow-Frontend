@@ -1,61 +1,93 @@
 // src/components/layout/Sidebar.tsx
-import { Link, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, Users, Wallet, FileText, Settings, 
+  LogOut, ChevronLeft, ChevronRight 
+} from 'lucide-react';
+import { clsx } from 'clsx';
 
-const Sidebar = () => {
-  const location = useLocation(); // Hook to check which page is active
+interface SidebarProps {
+  isCollapsed: boolean;
+  toggleCollapse: () => void;
+}
 
-  const menuItems = [
-    { name: "Dashboard", icon: "📊", path: "/" },
-    { name: "Employees", icon: "👥", path: "/employees" },
-    { name: "Payroll", icon: "💳", path: "/payroll" },
-    { name: "Reports", icon: "📄", path: "/reports" },
-    { name: "Settings", icon: "⚙️", path: "/settings" },
+const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('accessToken');
+    navigate('/login');
+  };
+
+  const navItems = [
+    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Employees', path: '/employees', icon: Users },
+    { name: 'Payroll', path: '/payroll', icon: Wallet },
+    { name: 'Reports', path: '/reports', icon: FileText },
+    { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   return (
-    <div className="h-screen w-64 bg-slate-900 text-white flex flex-col fixed left-0 top-0 border-r border-slate-800">
-      
-      {/* 1. Logo Section */}
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+    <div 
+      className={clsx(
+        "bg-[#0f172a] text-slate-300 flex flex-col transition-all duration-300 h-screen fixed left-0 top-0 border-r border-slate-800 z-50",
+        isCollapsed ? "w-20" : "w-64"
+      )}
+    >
+      {/* Logo Area */}
+      <div className="h-20 flex items-center px-6 border-b border-slate-800">
+        <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0">
           SF
         </div>
-        <div>
-          <h1 className="text-lg font-bold leading-tight">SheriaFlow</h1>
-          <p className="text-slate-400 text-xs">Payroll System</p>
-        </div>
+        {!isCollapsed && (
+          <div className="ml-3 fade-in">
+            <h1 className="text-white font-bold text-lg tracking-tight">SheriaFlow</h1>
+            <p className="text-xs text-slate-500">Payroll System</p>
+          </div>
+        )}
       </div>
 
-      {/* 2. Navigation Menu */}
-      <nav className="flex-1 px-4 mt-6 space-y-2">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          
-          return (
-            <Link
-              key={item.name}
-              to={item.path}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-slate-800 text-white" // Active styling
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white" // Inactive styling
-              }`}
-            >
-              <span className="text-lg">{item.icon}</span>
-              {item.name}
-            </Link>
-          );
-        })}
+      {/* Navigation */}
+      <nav className="flex-1 py-6 px-3 space-y-1">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) => clsx(
+              "flex items-center px-3 py-3 rounded-lg transition-all duration-200 group",
+              isActive 
+                ? "bg-emerald-500/10 text-emerald-400" 
+                : "hover:bg-slate-800 hover:text-white"
+            )}
+          >
+            <item.icon size={20} className="shrink-0" />
+            {!isCollapsed && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">{item.name}</span>}
+            
+            {/* Active Indicator */}
+            <NavLink to={item.path} className={({ isActive }) => clsx(
+               isActive && !isCollapsed ? "absolute left-0 w-1 h-8 bg-emerald-500 rounded-r-full" : "hidden"
+            )} />
+          </NavLink>
+        ))}
       </nav>
 
-      {/* 3. Footer / Logout */}
-      <div className="p-4 border-t border-slate-800">
-        <Link 
-          to="/login" 
-          className="flex items-center gap-3 text-slate-400 hover:text-white text-sm font-medium w-full px-4 py-2 hover:bg-slate-800 rounded-lg transition-colors"
+      {/* Bottom Actions */}
+      <div className="p-3 border-t border-slate-800 space-y-2">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center w-full px-3 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+          title="Logout"
         >
-          <span>🚪</span> Logout
-        </Link>
+          <LogOut size={20} className="shrink-0" />
+          {!isCollapsed && <span className="ml-3 font-medium">Logout</span>}
+        </button>
+
+        <button 
+          onClick={toggleCollapse}
+          className="flex items-center justify-center w-full py-2 text-slate-500 hover:text-white transition-colors bg-slate-800/50 rounded-lg"
+        >
+          {isCollapsed ? <ChevronRight size={20} /> : <div className="flex items-center text-xs gap-2"><ChevronLeft size={16} /> <span>Collapse</span></div>}
+        </button>
       </div>
     </div>
   );
