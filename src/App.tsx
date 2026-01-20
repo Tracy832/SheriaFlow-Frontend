@@ -12,7 +12,7 @@ import Register from './components/pages/Register';
 import Employees from './components/pages/Employees'; 
 import Payroll from './components/pages/Payroll'; 
 import Reports from './components/pages/Reports'; 
-import Settings from './components/pages/Settings'; // <--- 1. IMPORT SETTINGS HERE
+import Settings from './components/pages/Settings'; 
 
 // Dashboard Widgets
 import PayrollChart from './components/dashboard/PayrollChart';
