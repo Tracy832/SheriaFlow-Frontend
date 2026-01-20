@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import Header from '../layout/Header';
+import ExpenseScanner from '../dashboard/ExpenseScanner'; 
+import SpikeModal from '../dashboard/SpikeModal'; 
 import { 
   Download, Play, FileText, CheckCircle2, 
-  Clock, AlertCircle, Search, Filter 
+  Clock, AlertCircle, Search, Filter, Sparkles, Upload, AlertTriangle 
 } from 'lucide-react';
 
-// 1. Types
+// 1. Interface Definition
 interface PayrollRecord {
   id: string;
   employee: string;
@@ -17,29 +19,61 @@ interface PayrollRecord {
   netPay: number;
   status: 'Paid' | 'Pending' | 'Processing';
   date: string;
+  spikeDetected?: boolean; 
+  spikeReason?: string;
 }
 
-// 2. Helper to format money
+// 2. Helper Function
 const formatCurrency = (amount: number) => {
   return "KES " + amount.toLocaleString();
 };
 
-// 3. Dummy Data
+// 3. Mock Data
 const payrollData: PayrollRecord[] = [
-  { id: 'PAY-001', employee: 'John Kamau', role: 'Senior Developer', department: 'Engineering', basicSalary: 120000, allowances: 10000, deductions: 25000, netPay: 105000, status: 'Paid', date: 'Jan 28, 2026' },
+  { 
+    id: 'PAY-001', 
+    employee: 'John Kamau', 
+    role: 'Senior Developer', 
+    department: 'Engineering', 
+    basicSalary: 120000, 
+    allowances: 45000, 
+    deductions: 25000, 
+    netPay: 140000, 
+    status: 'Paid', 
+    date: 'Jan 28, 2026',
+    spikeDetected: true,
+    spikeReason: 'Net pay is 30% higher than 6-month average (Bonus detected)'
+  },
   { id: 'PAY-002', employee: 'Sarah Wanjiku', role: 'Legal Counsel', department: 'Legal', basicSalary: 90000, allowances: 5000, deductions: 18000, netPay: 77000, status: 'Paid', date: 'Jan 28, 2026' },
   { id: 'PAY-003', employee: 'Michael Omondi', role: 'HR Manager', department: 'HR', basicSalary: 80000, allowances: 2000, deductions: 15000, netPay: 67000, status: 'Processing', date: 'Jan 28, 2026' },
   { id: 'PAY-004', employee: 'Brian Koech', role: 'Sales Rep', department: 'Sales', basicSalary: 45000, allowances: 15000, deductions: 8000, netPay: 52000, status: 'Pending', date: 'Jan 28, 2026' },
-  { id: 'PAY-005', employee: 'Lucy Achieng', role: 'Accountant', department: 'Finance', basicSalary: 60000, allowances: 5000, deductions: 12000, netPay: 53000, status: 'Pending', date: 'Jan 28, 2026' },
 ];
 
 const Payroll = () => {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
+  const [showScanner, setShowScanner] = useState(false);
+  const [selectedSpike, setSelectedSpike] = useState<PayrollRecord | null>(null);
+
+  const handleApproveSpike = () => {
+    // Logic to update backend would go here
+    setSelectedSpike(null);
+  };
 
   return (
     <div className="p-8 space-y-8 max-w-[1600px] mx-auto">
       
-      {/* 1. Header & Actions */}
+      {/* Modals */}
+      {showScanner && <ExpenseScanner onClose={() => setShowScanner(false)} />}
+      
+      {selectedSpike && (
+        <SpikeModal 
+           record={selectedSpike} 
+           onClose={() => setSelectedSpike(null)} 
+           onApprove={handleApproveSpike}
+        />
+      )}
+
+      {/* Header & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <Header 
           title="Payroll" 
@@ -47,6 +81,14 @@ const Payroll = () => {
           user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
         />
         <div className="flex items-center gap-3">
+           <button 
+             onClick={() => setShowScanner(true)}
+             className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium"
+           >
+             <Upload size={18} />
+             Scan Receipt
+           </button>
+
            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
              <Download size={18} />
              Export Reports
@@ -58,7 +100,7 @@ const Payroll = () => {
         </div>
       </div>
 
-      {/* 2. Payroll Overview Cards */}
+      {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
@@ -92,13 +134,12 @@ const Payroll = () => {
          </div>
       </div>
 
-      {/* 3. Main Content Area */}
+      {/* Main Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         
         {/* Tabs & Filters */}
         <div className="border-b border-slate-100">
            <div className="flex items-center justify-between px-5 pt-4">
-              {/* Tabs */}
               <div className="flex gap-6">
                  <button 
                    onClick={() => setActiveTab('current')}
@@ -113,8 +154,6 @@ const Payroll = () => {
                    History
                  </button>
               </div>
-
-              {/* Filters */}
               <div className="flex gap-3 mb-3">
                  <div className="relative">
                     <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
@@ -127,7 +166,7 @@ const Payroll = () => {
            </div>
         </div>
 
-        {/* Table */}
+        {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
             <thead className="bg-slate-50/50 text-slate-900 font-semibold border-b border-slate-200 uppercase tracking-wider text-xs">
@@ -156,8 +195,28 @@ const Payroll = () => {
                   <td className="p-5 text-emerald-600 bg-emerald-50/30">{formatCurrency(record.allowances)}</td>
                   <td className="p-5 text-red-600 bg-red-50/30">{formatCurrency(record.deductions)}</td>
                   
-                  <td className="p-5 font-bold text-slate-900 text-base">
-                    {formatCurrency(record.netPay)}
+                  <td className="p-5">
+                     <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-base">
+                            {formatCurrency(record.netPay)}
+                        </span>
+                        
+                        {/* Spike Visual Trigger */}
+                        {record.spikeDetected && (
+                            <button 
+                               onClick={() => setSelectedSpike(record)}
+                               className="group/spike relative p-1 hover:bg-amber-50 rounded-full transition-colors"
+                            >
+                               <AlertTriangle size={18} className="text-amber-500 animate-pulse cursor-pointer" />
+                               {/* Hover Tooltip */}
+                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max bg-slate-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover/spike:opacity-100 transition-opacity pointer-events-none">
+                                  <div className="flex items-center gap-1">
+                                    <Sparkles size={10} /> Click to analyze
+                                  </div>
+                               </div>
+                            </button>
+                        )}
+                     </div>
                   </td>
 
                   <td className="p-5">

@@ -13,6 +13,7 @@ import Employees from './components/pages/Employees';
 import Payroll from './components/pages/Payroll'; 
 import Reports from './components/pages/Reports'; 
 import Settings from './components/pages/Settings'; 
+import AIAssistant from './components/common/AIAssistant'; // <--- 1. IMPORT AI ASSISTANT
 
 // Dashboard Widgets
 import PayrollChart from './components/dashboard/PayrollChart';
@@ -24,7 +25,7 @@ const LayoutWrapper = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex">
+    <div className="min-h-screen bg-slate-50 font-sans flex relative">
       <Sidebar isCollapsed={isCollapsed} toggleCollapse={() => setIsCollapsed(!isCollapsed)} />
       
       <main className={clsx(
@@ -33,6 +34,9 @@ const LayoutWrapper = () => {
       )}>
         <Outlet />
       </main>
+
+      {/* 2. GLOBAL AI CHATBOT (Floats on top of all pages) */}
+      <AIAssistant />
     </div>
   );
 };
@@ -88,8 +92,6 @@ function App() {
           <Route path="/employees" element={<Employees />} /> 
           <Route path="/payroll" element={<Payroll />} />
           <Route path="/reports" element={<Reports />} />
-          
-          {/* --- FIX IS HERE: Use the Settings Component --- */}
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>
