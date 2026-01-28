@@ -1,147 +1,180 @@
-import { useState } from 'react';
-import Header from '../layout/Header';
+import { useState, useEffect, useRef } from 'react';
 import { 
-  Search, Plus, Filter, MoreHorizontal, 
-  Mail, Phone, MapPin, Download 
+  Plus, Search, Filter, MoreHorizontal, 
+  Trash2, UserX, UserCheck, Mail, Phone, MapPin 
 } from 'lucide-react';
+import Header from '../layout/Header';
+import AddEmployeeModal from '../dashboard/AddEmployeeModal';
+import api from '../../api/axios';
 
-// 1. Employee Interface
+// Interface matching your Backend API
 interface Employee {
   id: number;
-  name: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone_number: string | null;
   role: string;
   department: string;
-  email: string;
-  phone: string;
-  location: string;
-  status: 'Active' | 'On Leave' | 'Terminated';
-  joinDate: string;
-  avatar: string; 
+  is_active: boolean; // True = Active, False = On Leave/Inactive
+  created_at: string;
 }
 
-// 2. Mock Data
-const initialEmployees: Employee[] = [
-  { id: 1, name: 'John Kamau', role: 'Senior Developer', department: 'Engineering', email: 'john.k@sheriaflow.co.ke', phone: '+254 712 345 678', location: 'Nairobi', status: 'Active', joinDate: 'Jan 10, 2024', avatar: 'JK' },
-  { id: 2, name: 'Sarah Wanjiku', role: 'Legal Counsel', department: 'Legal', email: 'sarah.w@sheriaflow.co.ke', phone: '+254 722 123 456', location: 'Nairobi', status: 'Active', joinDate: 'Feb 15, 2024', avatar: 'SW' },
-  { id: 3, name: 'Michael Omondi', role: 'HR Manager', department: 'HR', email: 'michael.o@sheriaflow.co.ke', phone: '+254 733 987 654', location: 'Remote', status: 'On Leave', joinDate: 'Mar 01, 2023', avatar: 'MO' },
-  { id: 4, name: 'Lucy Achieng', role: 'Accountant', department: 'Finance', email: 'lucy.a@sheriaflow.co.ke', phone: '+254 711 222 333', location: 'Mombasa', status: 'Active', joinDate: 'Jan 05, 2025', avatar: 'LA' },
-  { id: 5, name: 'Brian Koech', role: 'Sales Rep', department: 'Sales', email: 'brian.k@sheriaflow.co.ke', phone: '+254 755 444 555', location: 'Kisumu', status: 'Terminated', joinDate: 'Dec 12, 2023', avatar: 'BK' },
-  { id: 6, name: 'Grace Njoroge', role: 'UI/UX Designer', department: 'Engineering', email: 'grace.n@sheriaflow.co.ke', phone: '+254 700 111 222', location: 'Nairobi', status: 'Active', joinDate: 'Jul 20, 2024', avatar: 'GN' },
-];
-
 const Employees = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null); // Track which menu is open
+  const [showAddModal, setShowAddModal] = useState(false); // Modal State
 
-  // Filter Logic
-  const filteredEmployees = initialEmployees.filter(emp => {
-    const matchesSearch = 
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.role.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'All' || emp.status === statusFilter;
+  // Close menu when clicking outside
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    return matchesSearch && matchesStatus;
-  });
+  // Fetch Employees
+  const fetchEmployees = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get('/employees/');
+      setEmployees(response.data);
+    } catch (error) {
+      console.error("Failed to fetch employees", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  // --- ACTIONS ---
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this employee? This cannot be undone.")) return;
+
+    try {
+      await api.delete(`/employees/${id}/`);
+      setEmployees(prev => prev.filter(emp => emp.id !== id));
+      setOpenMenuId(null);
+    } catch (error) {
+      // FIX 1: Log the error to satisfy ESLint
+      console.error("Delete failed:", error); 
+      alert("Failed to delete employee.");
+    }
+  };
+
+  const handleToggleStatus = async (employee: Employee) => {
+    const newStatus = !employee.is_active;
+    try {
+      // Sending partial update (PATCH)
+      await api.patch(`/employees/${employee.id}/`, { is_active: newStatus });
+      
+      // Update UI optimistically
+      setEmployees(prev => prev.map(emp => 
+        emp.id === employee.id ? { ...emp, is_active: newStatus } : emp
+      ));
+      setOpenMenuId(null);
+    } catch (error) {
+      // FIX 2: Log the error to satisfy ESLint
+      console.error("Status update failed:", error);
+      alert("Failed to update status.");
+    }
+  };
+
+  // Stats Logic
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter(e => e.is_active).length;
+  const inactiveEmployees = totalEmployees - activeEmployees;
 
   return (
-    <div className="p-8 space-y-8 max-w-[1600px] mx-auto">
+    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
       
-      {/* 1. Page Header */}
+      {/* Add Employee Modal */}
+      {showAddModal && (
+        <AddEmployeeModal 
+          onClose={() => setShowAddModal(false)} 
+          onSuccess={() => {
+             fetchEmployees(); 
+             alert("Employee added successfully!");
+          }}
+        />
+      )}
+
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <Header 
           title="Employees" 
           subtitle="Manage your team members and their account details"
           user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
         />
-        <div className="flex items-center gap-3">
-           <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors text-sm font-medium">
-             <Download size={18} />
-             Export CSV
+        <div className="flex gap-3">
+           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition-colors">
+             <Filter size={18} /> Export CSV
            </button>
-           <button className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium shadow-lg shadow-slate-900/20">
-             <Plus size={18} />
-             Add Employee
+           <button 
+             onClick={() => setShowAddModal(true)}
+             className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium shadow-lg shadow-slate-900/20 transition-all active:scale-95"
+           >
+             <Plus size={18} /> Add Employee
            </button>
         </div>
       </div>
 
-      {/* 2. Stats Overview Row */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-sm font-medium text-slate-500">Total Employees</p>
-               <h3 className="text-2xl font-bold text-slate-900 mt-1">{initialEmployees.length}</h3>
-            </div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-               <Search size={24} /> {/* Icon placeholder */}
-            </div>
-         </div>
-         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-sm font-medium text-slate-500">Active Now</p>
-               <h3 className="text-2xl font-bold text-slate-900 mt-1">
-                 {initialEmployees.filter(e => e.status === 'Active').length}
-               </h3>
-            </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-               <div className="w-6 h-6 rounded-full bg-emerald-500 border-2 border-emerald-100" />
-            </div>
-         </div>
-         <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-            <div>
-               <p className="text-sm font-medium text-slate-500">On Leave</p>
-               <h3 className="text-2xl font-bold text-slate-900 mt-1">
-                 {initialEmployees.filter(e => e.status === 'On Leave').length}
-               </h3>
-            </div>
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-               <div className="w-6 h-6 rounded-full bg-amber-500 border-2 border-amber-100" />
-            </div>
-         </div>
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+           <div>
+              <p className="text-sm text-slate-500 font-medium">Total Employees</p>
+              <h3 className="text-3xl font-bold text-slate-900 mt-1">{totalEmployees}</h3>
+           </div>
+           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+              <UserCheck size={24} />
+           </div>
+        </div>
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+           <div>
+              <p className="text-sm text-slate-500 font-medium">Active Now</p>
+              <h3 className="text-3xl font-bold text-slate-900 mt-1">{activeEmployees}</h3>
+           </div>
+           <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+        </div>
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+           <div>
+              <p className="text-sm text-slate-500 font-medium">Inactive / On Leave</p>
+              <h3 className="text-3xl font-bold text-slate-900 mt-1">{inactiveEmployees}</h3>
+           </div>
+           <div className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+        </div>
       </div>
 
-      {/* 3. Main Content Card */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        
-        {/* Filters Bar */}
-        <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          
-          {/* Search */}
-          <div className="relative w-full sm:w-96">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-              <Search size={18} />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Search by name, role, or email..." 
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {/* Filter Dropdown */}
-          <div className="flex items-center gap-2">
-             <Filter size={18} className="text-slate-400" />
-             <select 
-               className="bg-transparent text-sm font-medium text-slate-600 focus:outline-none cursor-pointer"
-               value={statusFilter}
-               onChange={(e) => setStatusFilter(e.target.value)}
-             >
-               <option value="All">All Status</option>
-               <option value="Active">Active</option>
-               <option value="On Leave">On Leave</option>
-               <option value="Terminated">Terminated</option>
-             </select>
-          </div>
+      {/* Search Bar */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+           <div className="relative w-full max-w-md">
+              <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search by name, role, or email..." 
+                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 bg-white" 
+              />
+           </div>
+           <button className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+              <Filter size={16} /> All Status
+           </button>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50/50 text-slate-900 font-semibold border-b border-slate-200 uppercase tracking-wider text-xs">
+            <thead className="bg-slate-50 text-slate-900 font-semibold border-b border-slate-200 uppercase tracking-wider text-xs">
               <tr>
                 <th className="p-5">Employee</th>
                 <th className="p-5">Contact Info</th>
@@ -152,93 +185,95 @@ const Employees = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-slate-50/80 transition-colors group">
-                  
-                  {/* Name */}
-                  <td className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-bold shadow-sm">
-                        {employee.avatar}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">{employee.name}</p>
-                        <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-                           <MapPin size={12} /> {employee.location}
+              {isLoading ? (
+                 <tr><td colSpan={6} className="p-10 text-center text-slate-500">Loading employees...</td></tr>
+              ) : employees.length === 0 ? (
+                 <tr><td colSpan={6} className="p-10 text-center text-slate-500">No employees found.</td></tr>
+              ) : (
+                employees.map((emp) => (
+                  <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+                          {emp.first_name[0]}{emp.last_name[0]}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{emp.first_name} {emp.last_name}</p>
+                          <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+                             <MapPin size={10} /> Nairobi
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
+                    <td className="p-5">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs">
+                           <Mail size={12} className="text-slate-400" /> {emp.email || 'N/A'}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                           <Phone size={12} className="text-slate-400" /> {emp.phone_number || 'N/A'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-5">
+                      <p className="font-medium text-slate-900">{emp.role}</p>
+                      <p className="text-xs text-slate-500">{emp.department}</p>
+                    </td>
+                    <td className="p-5">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
+                        emp.is_active 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                          : 'bg-amber-50 text-amber-700 border-amber-100'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${emp.is_active ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                        {emp.is_active ? 'Active' : 'On Leave'}
+                      </span>
+                    </td>
+                    <td className="p-5 text-slate-500">
+                       {new Date(emp.created_at).toLocaleDateString()}
+                    </td>
+                    
+                    {/* ACTION MENU */}
+                    <td className="p-5 text-right relative">
+                      <button 
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           setOpenMenuId(openMenuId === emp.id ? null : emp.id);
+                        }}
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        <MoreHorizontal size={20} />
+                      </button>
 
-                  {/* Contact */}
-                  <td className="p-5">
-                    <div className="space-y-1">
-                       <div className="flex items-center gap-2 text-xs">
-                          <Mail size={14} className="text-slate-400" /> {employee.email}
-                       </div>
-                       <div className="flex items-center gap-2 text-xs">
-                          <Phone size={14} className="text-slate-400" /> {employee.phone}
-                       </div>
-                    </div>
-                  </td>
-
-                  {/* Role */}
-                  <td className="p-5">
-                    <p className="font-medium text-slate-900">{employee.role}</p>
-                    <span className="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-medium bg-slate-100 text-slate-600">
-                      {employee.department}
-                    </span>
-                  </td>
-                  
-                  {/* Status */}
-                  <td className="p-5">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                      employee.status === 'Active' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                        : employee.status === 'On Leave' 
-                        ? 'bg-amber-50 text-amber-700 border-amber-100' 
-                        : 'bg-slate-50 text-slate-600 border-slate-100'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        employee.status === 'Active' ? 'bg-emerald-500' :
-                        employee.status === 'On Leave' ? 'bg-amber-500' : 'bg-slate-400'
-                      }`} />
-                      {employee.status}
-                    </span>
-                  </td>
-
-                  {/* Join Date */}
-                  <td className="p-5 text-slate-500 font-medium">
-                    {employee.joinDate}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="p-5 text-right">
-                    <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
-                      <MoreHorizontal size={20} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      {/* Dropdown Menu */}
+                      {openMenuId === emp.id && (
+                        <div 
+                          ref={menuRef}
+                          className="absolute right-10 top-8 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                        >
+                          <div className="py-1">
+                            <button 
+                              onClick={() => handleToggleStatus(emp)}
+                              className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2"
+                            >
+                              {emp.is_active ? <UserX size={16} /> : <UserCheck size={16} />}
+                              {emp.is_active ? 'Mark On Leave' : 'Activate Employee'}
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(emp.id)}
+                              className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"
+                            >
+                              <Trash2 size={16} /> Delete Employee
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-
-          {/* Empty State */}
-          {filteredEmployees.length === 0 && (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                 <Search size={32} />
-              </div>
-              <h3 className="text-lg font-medium text-slate-900">No employees found</h3>
-              <p className="text-slate-500 mt-1">Try adjusting your search or filter to find what you're looking for.</p>
-              <button 
-                 onClick={() => {setSearchTerm(''); setStatusFilter('All')}}
-                 className="mt-4 text-emerald-600 font-medium hover:underline"
-              >
-                 Clear filters
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -1,18 +1,101 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../layout/Header';
+import api from '../../api/axios';
+import { isAxiosError } from 'axios'; // <--- Import for type-safe error handling
 import { 
   Building2, Shield, Bell, Moon, Lock, 
-  Save, AlertTriangle // <--- Removed 'Check' from here
+  Save, AlertTriangle, Loader2 
 } from 'lucide-react';
 
+interface CompanyProfile {
+  name: string;
+  kra_pin: string;
+  nssf_number: string;
+  shif_number: string; 
+  email?: string;
+  address?: string;
+}
+
 const Settings = () => {
-  // State for toggles
+  // UI State
   const [notifications, setNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  
-  // State for Tax Configurations
   const [housingLevy, setHousingLevy] = useState(true);
   const [shifEnabled, setShifEnabled] = useState(true);
+
+  // Data State
+  const [formData, setFormData] = useState<CompanyProfile>({
+    name: '',
+    kra_pin: '',
+    nssf_number: '',
+    shif_number: '',
+    email: '',
+    address: ''
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+
+  useEffect(() => {
+    fetchCompanyData();
+  }, []);
+
+  const fetchCompanyData = async () => {
+    try {
+        const response = await api.get('/companies/');
+        
+        if (response.data.length > 0) {
+            const company = response.data[0];
+            setFormData({
+                name: company.name,
+                kra_pin: company.kra_pin,
+                nssf_number: company.nssf_number,
+                shif_number: company.shif_number || '', 
+                email: '', 
+                address: '' 
+            });
+        }
+    } catch (err) {
+        console.error("Failed to load company settings", err);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+        const listResponse = await api.get('/companies/');
+        
+        if (listResponse.data.length > 0) {
+            const companyId = listResponse.data[0].id;
+            await api.patch(`/companies/${companyId}/`, formData);
+        } else {
+            await api.post('/companies/', formData);
+        }
+
+        setMessage({ type: 'success', text: 'Settings saved successfully!' });
+        setTimeout(() => setMessage(null), 3000);
+
+    } catch (err) {
+        // --- FIXED ERROR HANDLING ---
+        console.error("Save failed", err);
+        let errorMessage = 'Failed to save settings. Please check your inputs.';
+        
+        if (isAxiosError(err)) {
+            errorMessage = err.response?.data?.detail || errorMessage;
+        }
+
+        setMessage({ 
+            type: 'error', 
+            text: errorMessage
+        });
+    } finally {
+        setIsSaving(false);
+    }
+  };
 
   return (
     <div className="p-8 space-y-8 max-w-[1600px] mx-auto">
@@ -21,6 +104,15 @@ const Settings = () => {
         subtitle="Manage system configurations and compliance"
         user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
       />
+
+      {/* Success/Error Toast */}
+      {message && (
+          <div className={`fixed top-10 right-10 px-6 py-3 rounded-lg shadow-lg text-white font-medium animate-in fade-in slide-in-from-top-5 z-50 ${
+              message.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+          }`}>
+              {message.text}
+          </div>
+      )}
 
       <div className="max-w-5xl space-y-8">
         
@@ -36,36 +128,70 @@ const Settings = () => {
             </div>
           </div>
           
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Company Name</label>
-              <input type="text" defaultValue="Acme Corporation Kenya Ltd" className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" />
-            </div>
+          {isLoading ? (
+              <div className="p-10 text-center text-slate-400">Loading company details...</div>
+          ) : (
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Company Name</label>
+                <input 
+                    type="text" 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Company KRA PIN</label>
-              <input type="text" defaultValue="P051234567X" className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" />
-            </div>
+                <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Company KRA PIN</label>
+                <input 
+                    type="text" 
+                    value={formData.kra_pin}
+                    onChange={(e) => setFormData({...formData, kra_pin: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">NSSF Employer Number</label>
-              <input type="text" defaultValue="123456789" className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" />
-            </div>
+                <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">NSSF Employer Number</label>
+                <input 
+                    type="text" 
+                    value={formData.nssf_number}
+                    onChange={(e) => setFormData({...formData, nssf_number: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                />
+                </div>
+                
+                <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Company Email</label>
+                <input 
+                    type="email" 
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Company Email</label>
-              <input type="email" defaultValue="payroll@acmecorp.co.ke" className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" />
+                <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Physical Address</label>
+                <input 
+                    type="text" 
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                />
+                </div>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Physical Address</label>
-              <input type="text" defaultValue="ABC Plaza, Waiyaki Way, Westlands" className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" />
-            </div>
-          </div>
+          )}
           
           <div className="p-4 bg-slate-50 border-t border-slate-100 text-right">
-            <button className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-slate-900/10 flex items-center gap-2 ml-auto">
-              <Save size={18} /> Save Changes
+            <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-all shadow-lg shadow-slate-900/10 flex items-center gap-2 ml-auto disabled:opacity-70"
+            >
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>

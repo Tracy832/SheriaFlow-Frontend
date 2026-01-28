@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Sparkles, Bot } from 'lucide-react'; // <--- Removed MessageSquare
+import { X, Send, Sparkles, Bot, Loader2 } from 'lucide-react';
+import api from '../../api/axios'; // <--- Import your Axios instance
 
 const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,32 +15,34 @@ const AIAssistant = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(scrollToBottom, [messages]);
+  useEffect(scrollToBottom, [messages, isTyping]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // 1. Add User Message
+    // 1. Add User Message UI
     const userMsg = input;
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setInput('');
     setIsTyping(true);
 
-    // 2. Simulate Backend AI Call
-    setTimeout(() => {
-      let aiResponse = "I can help with that. Let me check the database...";
+    try {
+      // 2. Real Backend Call
+      const response = await api.post('/payroll/chat/', { message: userMsg });
       
-      // Simple mock logic
-      if (userMsg.toLowerCase().includes('spike') || userMsg.toLowerCase().includes('salary')) {
-        aiResponse = "I detected a **15% salary spike** for John Kamau this month compared to his 3-month average. This appears to be a one-time performance bonus.";
-      } else if (userMsg.toLowerCase().includes('receipt')) {
-         aiResponse = "To process a receipt, please use the 'Scan Receipt' button in the Payroll or Expenses tab. I will automatically extract the tax details.";
-      }
-
-      setMessages(prev => [...prev, { role: 'ai', text: aiResponse }]);
+      // 3. Add AI Response UI
+      setMessages(prev => [...prev, { role: 'ai', text: response.data.response }]);
+    
+    } catch (error) {
+      console.error("AI Error:", error);
+      setMessages(prev => [...prev, { 
+        role: 'ai', 
+        text: "I'm having trouble reaching the server. Please try again later." 
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -76,16 +79,22 @@ const AIAssistant = () => {
                     ? 'bg-slate-900 text-white rounded-tr-none' 
                     : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
                 }`}>
-                  <p dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                  {/* Improved Formatting: Handles Bold and Newlines */}
+                  <p dangerouslySetInnerHTML={{ 
+                      __html: msg.text
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                        .replace(/\n/g, '<br/>') // Newlines
+                  }} />
                 </div>
               </div>
             ))}
+            
+            {/* Typing Indicator */}
             {isTyping && (
                <div className="flex justify-start">
-                  <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
-                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
-                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-75"></span>
-                     <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+                  <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-sm flex gap-2 items-center">
+                     <Loader2 size={16} className="animate-spin text-emerald-600" />
+                     <span className="text-xs text-slate-500 font-medium">Processing...</span>
                   </div>
                </div>
             )}

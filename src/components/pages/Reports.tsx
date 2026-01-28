@@ -1,224 +1,353 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Header from '../layout/Header';
+import api from '../../api/axios';
 import { 
-  FileSpreadsheet, FileText, Download, Filter, 
-  Calendar, CheckCircle2, Clock, 
-  Search, ArrowUpRight, File
+  FileText, Download, Filter, Search, 
+  Calendar, CheckCircle, Clock, Sparkles, Loader2, FileSpreadsheet,
+  ChevronDown
 } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell 
-} from 'recharts';
 
-// 1. Data Types
-interface ReportFile {
+// --- Types ---
+interface PayrollRun {
   id: number;
-  name: string;
-  category: string;
-  date: string;
-  size: string;
-  type: 'EXCEL' | 'PDF' | 'CSV' | 'ZIP';
-  status: 'Ready' | 'Archived';
+  month: number;
+  year: number;
+  status: string;
+  created_at: string;
 }
 
-// 2. Mock Data
-const reportsList: ReportFile[] = [
-  { id: 101, name: 'Bank Transfer File (EFT)', category: 'Payments', date: 'Jan 28, 2026', size: '45 KB', type: 'EXCEL', status: 'Ready' },
-  { id: 102, name: 'Employee Payslips (Bulk)', category: 'Payslips', date: 'Jan 28, 2026', size: '12.4 MB', type: 'ZIP', status: 'Ready' },
-  { id: 103, name: 'KRA PAYE Returns (P10)', category: 'Tax', date: 'Jan 20, 2026', size: '1.2 MB', type: 'PDF', status: 'Ready' },
-  { id: 104, name: 'NSSF Contributions', category: 'Compliance', date: 'Jan 15, 2026', size: '850 KB', type: 'CSV', status: 'Ready' },
-  { id: 105, name: 'SHIF / NHIF Report', category: 'Compliance', date: 'Jan 15, 2026', size: '1.4 MB', type: 'EXCEL', status: 'Archived' },
-  { id: 106, name: 'Housing Levy Summary', category: 'Tax', date: 'Jan 15, 2026', size: '600 KB', type: 'PDF', status: 'Ready' },
-];
+interface ReportDoc {
+  id: string;
+  runId: number;
+  title: string;
+  type: 'Tax' | 'Bank' | 'Compliance';
+  date: string; // Display string e.g., "Jan 2026"
+  rawDate: Date; // For sorting/filtering
+  year: number;
+  url: string;
+  filename: string;
+}
 
-const chartData = [
-  { month: 'Aug', amount: 4800000 },
-  { month: 'Sep', amount: 4900000 },
-  { month: 'Oct', amount: 5100000 },
-  { month: 'Nov', amount: 4500000 },
-  { month: 'Dec', amount: 5800000 }, 
-  { month: 'Jan', amount: 5200000 },
-];
+interface ChartDataPoint {
+  name: string; // e.g., "Jan"
+  gross: number;
+  deductions: number;
+}
 
 const Reports = () => {
-  const [selectedYear, setSelectedYear] = useState('2026');
-  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Data State
+  const [allDocuments, setAllDocuments] = useState<ReportDoc[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [stats, setStats] = useState({ total: 0, compliance: 100 });
 
-  const getFileIcon = (type: string) => {
-    switch(type) {
-      case 'EXCEL': return <FileSpreadsheet className="text-emerald-600" size={20} />;
-      case 'PDF': return <FileText className="text-red-600" size={20} />;
-      case 'CSV': return <FileSpreadsheet className="text-green-600" size={20} />;
-      case 'ZIP': return <File className="text-amber-600" size={20} />;
-      default: return <FileText className="text-slate-600" size={20} />;
+  // Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState<'All' | 'Tax' | 'Bank'>('All');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+
+  // --- 1. Fetch Data on Load ---
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // A. Fetch Payroll Runs (For Documents)
+        const runsRes = await api.get('/payroll/runs/');
+        const runs: PayrollRun[] = runsRes.data;
+
+        const generatedDocs: ReportDoc[] = runs.flatMap((run) => {
+            const dateObj = new Date(run.year, run.month - 1);
+            const dateStr = dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
+            
+            return [
+                {
+                    id: `p10-${run.id}`,
+                    runId: run.id,
+                    title: `KRA P10 Returns (${dateStr})`,
+                    type: 'Tax',
+                    date: dateStr,
+                    rawDate: dateObj,
+                    year: run.year,
+                    url: `/payroll/download-p10/${run.id}/`,
+                    filename: `KRA_P10_Return_${run.month}_${run.year}.xlsx`
+                },
+                {
+                    id: `bank-${run.id}`,
+                    runId: run.id,
+                    title: `Bank Transfer File (${dateStr})`,
+                    type: 'Bank',
+                    date: dateStr,
+                    rawDate: dateObj,
+                    year: run.year,
+                    url: `/payroll/download-bank/${run.id}/`,
+                    filename: `Bank_Transfer_${run.month}_${run.year}.xlsx`
+                }
+            ];
+        });
+        
+        // Sort by newest first
+        generatedDocs.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+        setAllDocuments(generatedDocs);
+        setStats({ total: generatedDocs.length, compliance: 100 });
+
+        // B. Fetch Chart Data
+        const chartRes = await api.get('/payroll/chart-data/');
+        setChartData(chartRes.data);
+
+      } catch (error) {
+        console.error("Failed to fetch reports data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // --- 2. Filtering Logic ---
+  const filteredDocuments = useMemo(() => {
+    return allDocuments.filter(doc => {
+      // Filter by Year
+      if (doc.year !== selectedYear) return false;
+
+      // Filter by Category Tab
+      if (activeCategory !== 'All' && doc.type !== (activeCategory === 'Bank' ? 'Bank' : 'Tax')) return false;
+
+      // Filter by Search
+      if (searchQuery && !doc.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+      return true;
+    });
+  }, [allDocuments, selectedYear, activeCategory, searchQuery]);
+
+  // --- 3. Dynamic Chart Max Calculation ---
+  const maxChartValue = Math.max(...chartData.map(d => d.gross), 100000); // Default to 100k to prevent div/0
+
+  // --- 4. Download Handler ---
+  const handleDownload = async (doc: ReportDoc) => {
+    try {
+      setIsLoading(true);
+      const response = await api.get(doc.url, { responseType: 'blob' });
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', doc.filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Download failed", error);
+      alert("Failed to download file.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-[1600px] mx-auto">
+    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500" onClick={() => setShowYearDropdown(false)}>
+      
       <Header 
         title="Reports" 
         subtitle="Manage compliance documents and financial summaries"
         user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
       />
 
-      {/* Control Bar */}
+      {/* Interactive Toolbar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-         <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-               <Calendar size={16} className="text-slate-500" />
-               <select 
-                 value={selectedYear} 
-                 onChange={(e) => setSelectedYear(e.target.value)}
-                 className="bg-transparent text-sm font-medium text-slate-700 focus:outline-none cursor-pointer"
-               >
-                 <option value="2026">2026</option>
-                 <option value="2025">2025</option>
-               </select>
-            </div>
-            <div className="h-6 w-px bg-slate-200 mx-2 hidden md:block"></div>
-            <div className="flex gap-2">
-               {['All', 'Tax', 'Payslips', 'Compliance'].map((filter) => (
-                 <button key={filter} className="px-3 py-1.5 text-xs font-medium rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors">
-                   {filter}
-                 </button>
-               ))}
-            </div>
-         </div>
-         <div className="relative w-full md:w-64">
-            <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
-            <input type="text" placeholder="Search reports..." className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
-         </div>
+        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto">
+          
+          {/* Year Filter Dropdown */}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={() => setShowYearDropdown(!showYearDropdown)}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <Calendar size={16} /> {selectedYear} <ChevronDown size={14} />
+            </button>
+            
+            {showYearDropdown && (
+              <div className="absolute top-full left-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-20 py-1">
+                {[2024, 2025, 2026].map(year => (
+                  <button
+                    key={year}
+                    onClick={() => { setSelectedYear(year); setShowYearDropdown(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-emerald-50 hover:text-emerald-700 ${selectedYear === year ? 'text-emerald-600 font-bold bg-emerald-50/50' : 'text-slate-600'}`}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="h-6 w-px bg-slate-200 mx-2"></div>
+
+          {/* Category Tabs */}
+          {(['All', 'Tax', 'Bank'] as const).map((cat) => (
+             <button
+               key={cat}
+               onClick={() => setActiveCategory(cat)}
+               className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                 activeCategory === cat 
+                   ? 'bg-slate-900 text-white shadow-md' 
+                   : 'text-slate-500 hover:bg-slate-100'
+               }`}
+             >
+               {cat === 'Bank' ? 'Bank Files' : cat}
+             </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full md:w-64">
+          <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search reports..." 
+            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500" 
+          />
+        </div>
       </div>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-           <div className="flex justify-between items-start mb-6">
-              <div>
-                 <h3 className="text-lg font-bold text-slate-900">Payroll Cost Analysis</h3>
-                 <p className="text-sm text-slate-500 mt-1">Total disbursement trends over the last 6 months</p>
-              </div>
-              <button className="text-emerald-600 text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:underline">
-                 Detailed Report <ArrowUpRight size={14} />
-              </button>
-           </div>
-           
-           <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={chartData} barSize={40}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                    <YAxis 
-                       axisLine={false} 
-                       tickLine={false} 
-                       tick={{fill: '#64748b', fontSize: 12}} 
-                       tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
-                    />
-                    <Tooltip 
-                       cursor={{fill: '#f8fafc'}}
-                       contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                       
-                       // --- FIX IS HERE: Added 'undefined' to the type union ---
-                       formatter={(value: number | string | undefined) => [`KES ${Number(value || 0).toLocaleString()}`, 'Total Cost']}
-                    />
-                    <Bar dataKey="amount" radius={[6, 6, 0, 0]}>
-                      {chartData.map((_, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={index === hoveredBar ? '#10b981' : '#1e293b'} 
-                          onMouseEnter={() => setHoveredBar(index)}
-                          onMouseLeave={() => setHoveredBar(null)}
-                        />
-                      ))}
-                    </Bar>
-                 </BarChart>
-              </ResponsiveContainer>
-           </div>
+        {/* Dynamic Chart Section */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <div>
+            <h3 className="font-bold text-slate-900 mb-2">Payroll Cost Analysis</h3>
+            <p className="text-sm text-slate-500 mb-6">Total disbursement trends for {selectedYear}</p>
+          </div>
+          
+          <div className="flex-1 flex items-end justify-between px-4 gap-4 min-h-[250px] relative">
+             {/* Y-Axis Grid Lines (Visual only) */}
+             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
+                <div className="border-t border-slate-300 w-full"></div>
+                <div className="border-t border-slate-300 w-full"></div>
+                <div className="border-t border-slate-300 w-full"></div>
+                <div className="border-t border-slate-300 w-full"></div>
+             </div>
+
+             {chartData.length === 0 ? (
+                <div className="w-full flex items-center justify-center text-slate-400 text-sm">
+                   No chart data available for this period.
+                </div>
+             ) : (
+                chartData.map((data, index) => {
+                   const heightPercent = (data.gross / maxChartValue) * 100;
+                   return (
+                     <div key={index} className="w-full flex flex-col justify-end items-center h-full group relative z-10">
+                        {/* Tooltip */}
+                        <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] px-2 py-1 rounded pointer-events-none whitespace-nowrap">
+                            KES {data.gross.toLocaleString()}
+                        </div>
+                        
+                        {/* Bar */}
+                        <div 
+                          className="w-full max-w-[50px] bg-emerald-500 rounded-t-lg transition-all duration-500 ease-out hover:bg-emerald-600 relative"
+                          style={{ height: `${heightPercent}%` }}
+                        ></div>
+                        
+                        {/* Label */}
+                        <div className="mt-3 text-xs font-medium text-slate-500">{data.name}</div>
+                     </div>
+                   );
+                })
+             )}
+          </div>
         </div>
 
-        {/* Recent Files */}
+        {/* Dynamic Documents List */}
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-           <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Documents</h3>
-           <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-              {reportsList.map((file) => (
-                 <div key={file.id} className="group p-3 rounded-lg border border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all flex items-center justify-between cursor-pointer">
-                    <div className="flex items-center gap-3">
-                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${
-                          file.type === 'PDF' ? 'bg-red-50 border-red-100' :
-                          file.type === 'EXCEL' ? 'bg-emerald-50 border-emerald-100' :
-                          file.type === 'ZIP' ? 'bg-amber-50 border-amber-100' : 'bg-slate-50 border-slate-100'
-                       }`}>
-                          {getFileIcon(file.type)}
-                       </div>
-                       <div>
-                          <p className="text-sm font-semibold text-slate-700 group-hover:text-emerald-700">{file.name}</p>
-                          <p className="text-xs text-slate-400">{file.date} • {file.size}</p>
-                       </div>
+          <h3 className="font-bold text-slate-900 mb-6">Available Documents</h3>
+          
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar flex-1">
+            {isLoading ? (
+                <div className="flex justify-center p-4"><Loader2 className="animate-spin text-emerald-500"/></div>
+            ) : filteredDocuments.length === 0 ? (
+                <div className="text-center py-10">
+                   <p className="text-slate-400 text-sm mb-2">No reports found.</p>
+                   {searchQuery && <p className="text-xs text-red-400">Try clearing your search filters.</p>}
+                </div>
+            ) : (
+                filteredDocuments.map((doc) => (
+                <div key={doc.id} className="group flex items-center justify-between p-4 border border-slate-100 rounded-lg hover:border-emerald-200 hover:bg-emerald-50/30 transition-all">
+                    <div className="flex items-center gap-4">
+                    <div className={`p-2.5 rounded-lg ${doc.type === 'Tax' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        {doc.type === 'Tax' ? <FileText size={20} /> : <FileSpreadsheet size={20} />}
                     </div>
-                    <button className="text-slate-400 hover:text-emerald-600 transition-colors p-2 rounded-full hover:bg-white">
-                       <Download size={18} />
+                    <div>
+                        <h4 className="font-semibold text-slate-800 text-sm">{doc.title}</h4>
+                        <p className="text-xs text-slate-500">{doc.date}</p>
+                    </div>
+                    </div>
+                    
+                    <button 
+                    onClick={(e) => { e.stopPropagation(); handleDownload(doc); }}
+                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white rounded-full transition-colors border border-transparent hover:border-slate-200 shadow-sm"
+                    title="Download File"
+                    >
+                    <Download size={18} />
                     </button>
-                 </div>
-              ))}
-           </div>
-           <button className="w-full mt-4 py-2 text-sm font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors">
-              View All Documents
-           </button>
+                </div>
+                ))
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Summary Footer */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-               <Filter size={20} />
-            </div>
-            <div>
-               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Total Reports</p>
-               <p className="text-xl font-bold text-slate-900">1,248</p>
-            </div>
-         </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><Filter size={20} /></div>
+           <div>
+             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Reports</p>
+             <h4 className="text-xl font-bold text-slate-900">{stats.total}</h4>
+           </div>
+        </div>
 
-         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-               <CheckCircle2 size={20} />
-            </div>
-            <div className="w-full">
-               <div className="flex justify-between items-center mb-1">
-                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Compliance</p>
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-1.5 rounded">100%</span>
-               </div>
-               <div className="w-full bg-emerald-100 h-1.5 rounded-full">
-                  <div className="bg-emerald-500 h-1.5 rounded-full w-full"></div>
-               </div>
-            </div>
-         </div>
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle size={20} /></div>
+           <div>
+             <div className="flex justify-between items-center mb-1 gap-2">
+               <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Compliance</p>
+               <span className="text-xs font-bold text-emerald-600">100%</span>
+             </div>
+             <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 w-full rounded-full"></div>
+             </div>
+           </div>
+        </div>
 
-         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
-               <Clock size={20} />
-            </div>
-            <div>
-               <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">Next Deadline</p>
-               <p className="text-lg font-bold text-slate-900">Feb 09</p>
-               <p className="text-xs text-red-500 font-medium">PAYE Returns</p>
-            </div>
-         </div>
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+           <div className="p-3 bg-amber-50 text-amber-600 rounded-lg"><Clock size={20} /></div>
+           <div>
+             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Next Deadline</p>
+             <h4 className="text-lg font-bold text-slate-900">Feb 09</h4>
+             <p className="text-[10px] text-red-500 font-medium">PAYE Returns</p>
+           </div>
+        </div>
 
-         <div className="bg-linear-to-br from-slate-900 to-slate-800 p-5 rounded-xl shadow-sm flex items-center justify-between text-white relative overflow-hidden group cursor-pointer">
-            <div className="relative z-10">
-               <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Quick Action</p>
-               <p className="font-bold text-lg">Generate P10</p>
-            </div>
-            <div className="relative z-10 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-               <Download size={20} />
-            </div>
-            <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full"></div>
-         </div>
+        <div className="bg-slate-900 p-5 rounded-xl shadow-lg flex items-center justify-between text-white relative overflow-hidden cursor-pointer group hover:shadow-emerald-500/20 transition-all">
+           <div className="relative z-10">
+             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Quick Action</p>
+             <h4 className="text-lg font-bold">Generate P10</h4>
+           </div>
+           <div className="p-2 bg-white/10 rounded-lg relative z-10 group-hover:bg-emerald-500 transition-colors">
+              <Download size={20} />
+           </div>
+           <div className="absolute right-[-20px] bottom-[-20px] text-white/5 group-hover:text-white/10 transition-colors">
+              <Sparkles size={100} />
+           </div>
+        </div>
       </div>
+
     </div>
   );
 };
