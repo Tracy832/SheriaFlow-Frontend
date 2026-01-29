@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // 1. Base URL (Switches automatically based on environment)
 // During development, it uses localhost. In production, we'll set the real URL.
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://sheriaflow-backend.onrender.com/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
