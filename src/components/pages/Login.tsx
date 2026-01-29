@@ -1,110 +1,135 @@
-// src/components/pages/Login.tsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, Loader2, AlertCircle } from 'lucide-react'; 
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import api from '../../api/axios'; 
+import { isAxiosError } from 'axios'; // <--- Import this to fix the error handling
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    // SIMULATION LOGIC
-    setTimeout(() => {
-      // 1. Simple Validation Mock
-      if (password.length < 4) {
-        setError('Password must be at least 4 characters');
-        setIsLoading(false);
-        return;
-      }
+    try {
+        // 1. Make the API Call
+        const response = await api.post('/token/', {
+            email: formData.email,
+            password: formData.password
+        });
 
-      // 2. "Save" the Fake Token (This is the Key!)
-      localStorage.setItem('accessToken', 'simulation-token-123');
-      
-      // 3. Redirect to Dashboard
-      setIsLoading(false);
-      navigate('/');
-    }, 1500); 
+        // 2. Save Tokens
+        localStorage.setItem('accessToken', response.data.access);
+        localStorage.setItem('refreshToken', response.data.refresh);
+
+        // 3. Redirect
+        navigate('/');
+
+    } catch (err) {
+        // Correct error handling logic
+        if (isAxiosError(err)) {
+            // Backend returned a specific error message
+            const message = err.response?.data?.detail || 'Invalid credentials';
+            setError(message);
+        } else {
+            // Network or other error
+            setError('Something went wrong. Please try again.');
+        }
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50 via-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 max-w-md w-full p-8 transition-all hover:shadow-2xl">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100">
         
-        {/* Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 bg-slate-900 rounded-xl shadow-lg shadow-blue-900/20 flex items-center justify-center text-white font-bold text-xl mb-4 transform transition-transform hover:scale-105">
-            SF
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4 text-emerald-600 font-bold text-xl">
+            S
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
-          <p className="text-slate-500 text-sm mt-2">Sign in to SheriaFlow Portal</p>
+          <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
+          <p className="text-slate-500 mt-2">Please enter your details to sign in</p>
         </div>
 
-        {/* Mock Error Alert */}
+        {/* Error Message */}
         {error && (
-          <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600 text-sm animate-pulse">
-            <AlertCircle size={16} />
-            <span>{error}</span>
-          </div>
+            <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center font-medium border border-red-100">
+                {error}
+            </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-slate-700">Email Address</label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email address</label>
+            <input 
+              type="email" 
+              required
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Mail size={18} />
-              </div>
               <input 
-                type="email" 
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all placeholder:text-slate-400 text-slate-800"
-                placeholder="demo@sheriaflow.co.ke"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type={showPassword ? "text" : "password"}
                 required
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
               />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-sm font-semibold text-slate-700">Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Lock size={18} />
-              </div>
-              <input 
-                type="password" 
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all text-slate-800 tracking-widest"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input type="checkbox" id="remember" className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded" />
+              <label htmlFor="remember" className="ml-2 block text-sm text-slate-600">Remember me</label>
             </div>
+            <a href="#" className="text-sm font-medium text-emerald-600 hover:text-emerald-500">Forgot password?</a>
           </div>
 
           <button 
-            type="submit"
+            type="submit" 
             disabled={isLoading}
-            className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white font-semibold py-2.5 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2"
+            className="w-full bg-slate-900 text-white py-2.5 rounded-lg font-medium hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
           >
-            {isLoading ? <><Loader2 className="animate-spin" size={20} /><span>Signing in...</span></> : "Log in to portal"}
+            {isLoading ? (
+                <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Signing in...
+                </>
+            ) : (
+                "Sign in"
+            )}
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-600 mt-8">
-          Don't have an account? <Link to="/register" className="font-semibold text-blue-600 hover:underline">Start free trial</Link>
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Don't have an account? 
+          <Link to="/register" className="font-medium text-emerald-600 hover:text-emerald-500 ml-1">Sign up</Link>
         </p>
-
-        <div className="mt-8 pt-6 border-t border-slate-100 text-center text-xs text-slate-400 uppercase font-medium">
-           Secured by SheriaFlow
-        </div>
       </div>
     </div>
   );

@@ -1,10 +1,9 @@
-// src/components/layout/Sidebar.tsx
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { 
-  LayoutDashboard, Users, Wallet, FileText, Settings, 
-  LogOut, ChevronLeft, ChevronRight 
+  LayoutDashboard, Users, Banknote, 
+  FileBarChart, Settings, ChevronLeft, Menu 
 } from 'lucide-react';
-import { clsx } from 'clsx';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -12,84 +11,105 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    navigate('/login');
-  };
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Employees', path: '/employees', icon: Users },
-    { name: 'Payroll', path: '/payroll', icon: Wallet },
-    { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+    { icon: Users, label: "Employees", path: "/employees" },
+    { icon: Banknote, label: "Payroll", path: "/payroll" },       // Updated Icon for clarity
+    { icon: FileBarChart, label: "Reports", path: "/reports" },   // <--- RESTORED
+    { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
   return (
-    <div 
-      className={clsx(
-        "bg-[#0f172a] text-slate-300 flex flex-col transition-all duration-300 h-screen fixed left-0 top-0 border-r border-slate-800 z-50",
-        isCollapsed ? "w-20" : "w-64"
-      )}
-    >
-      {/* Logo Area */}
-      <div className="h-20 flex items-center px-6 border-b border-slate-800">
-        <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0">
-          SF
-        </div>
-        {!isCollapsed && (
-          <div className="ml-3 fade-in">
-            <h1 className="text-white font-bold text-lg tracking-tight">SheriaFlow</h1>
-            <p className="text-xs text-slate-500">Payroll System</p>
-          </div>
-        )}
-      </div>
+    <>
+      {/* Mobile Menu Button */}
+      <button 
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-lg shadow-lg"
+        onClick={() => setIsMobileOpen(!isMobileOpen)}
+      >
+        <Menu size={20} />
+      </button>
 
-      {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 space-y-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => clsx(
-              "flex items-center px-3 py-3 rounded-lg transition-all duration-200 group",
-              isActive 
-                ? "bg-emerald-500/10 text-emerald-400" 
-                : "hover:bg-slate-800 hover:text-white"
+      {/* Sidebar Container */}
+      <div className={`
+        fixed inset-y-0 left-0 z-40 bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col
+        ${isCollapsed ? 'w-20' : 'w-64'}
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        
+        {/* Logo Area */}
+        <div className="h-20 flex items-center px-6 border-b border-slate-800/50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+              SF
+            </div>
+            {!isCollapsed && (
+              <div>
+                <h1 className="font-bold text-white tracking-tight">SheriaFlow</h1>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Payroll System</p>
+              </div>
             )}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-6 px-3 space-y-1">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              onClick={() => setIsMobileOpen(false)}
+              className={({ isActive }) => `
+                flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden
+                ${isActive 
+                  ? 'bg-emerald-500/10 text-emerald-400 shadow-inner' 
+                  : 'hover:bg-slate-800/50 hover:text-white'
+                }
+              `}
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-r-full" />
+                  )}
+                  <item.icon size={20} className={`min-w-[20px] transition-colors ${isActive ? 'text-emerald-400' : 'text-slate-400 group-hover:text-white'}`} />
+                  
+                  {!isCollapsed && (
+                    <span className="font-medium text-sm whitespace-nowrap">{item.label}</span>
+                  )}
+
+                  {/* Tooltip for collapsed state */}
+                  {isCollapsed && (
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">
+                      {item.label}
+                    </div>
+                  )}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Footer Toggle */}
+        <div className="p-4 border-t border-slate-800/50 hidden md:flex">
+          <button 
+            onClick={toggleCollapse}
+            className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
           >
-            <item.icon size={20} className="shrink-0" />
-            {!isCollapsed && <span className="ml-3 font-medium whitespace-nowrap overflow-hidden">{item.name}</span>}
-            
-            {/* Active Indicator */}
-            <NavLink to={item.path} className={({ isActive }) => clsx(
-               isActive && !isCollapsed ? "absolute left-0 w-1 h-8 bg-emerald-500 rounded-r-full" : "hidden"
-            )} />
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Bottom Actions */}
-      <div className="p-3 border-t border-slate-800 space-y-2">
-        <button 
-          onClick={handleLogout}
-          className="flex items-center w-full px-3 py-3 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-          title="Logout"
-        >
-          <LogOut size={20} className="shrink-0" />
-          {!isCollapsed && <span className="ml-3 font-medium">Logout</span>}
-        </button>
-
-        <button 
-          onClick={toggleCollapse}
-          className="flex items-center justify-center w-full py-2 text-slate-500 hover:text-white transition-colors bg-slate-800/50 rounded-lg"
-        >
-          {isCollapsed ? <ChevronRight size={20} /> : <div className="flex items-center text-xs gap-2"><ChevronLeft size={16} /> <span>Collapse</span></div>}
-        </button>
+            <ChevronLeft size={20} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Overlay for Mobile */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+    </>
   );
 };
 
