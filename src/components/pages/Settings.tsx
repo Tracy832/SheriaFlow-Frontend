@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Header from '../layout/Header';
 import api from '../../api/axios';
-import { isAxiosError } from 'axios'; // <--- Import for type-safe error handling
+import { isAxiosError } from 'axios';
 import { 
   Building2, Shield, Bell, Moon, Lock, 
   Save, AlertTriangle, Loader2 
@@ -28,7 +28,7 @@ const Settings = () => {
     name: '',
     kra_pin: '',
     nssf_number: '',
-    shif_number: '',
+    shif_number: '', // State exists, now we add the input for it
     email: '',
     address: ''
   });
@@ -51,8 +51,8 @@ const Settings = () => {
                 kra_pin: company.kra_pin,
                 nssf_number: company.nssf_number,
                 shif_number: company.shif_number || '', 
-                email: '', 
-                address: '' 
+                email: company.email || '', // Ensure we catch email if backend sends it
+                address: company.address || '' 
             });
         }
     } catch (err) {
@@ -80,12 +80,23 @@ const Settings = () => {
         setTimeout(() => setMessage(null), 3000);
 
     } catch (err) {
-        // --- FIXED ERROR HANDLING ---
         console.error("Save failed", err);
         let errorMessage = 'Failed to save settings. Please check your inputs.';
         
         if (isAxiosError(err)) {
-            errorMessage = err.response?.data?.detail || errorMessage;
+            // This captures errors like {"shif_number": ["This field may not be blank"]}
+            // and turns them into readable text
+            const errorData = err.response?.data;
+            if (errorData) {
+                if (typeof errorData === 'object' && !Array.isArray(errorData)) {
+                    // Grab the first error message from the object
+                    const key = Object.keys(errorData)[0];
+                    const msg = errorData[key];
+                    errorMessage = `${key.replace('_', ' ').toUpperCase()}: ${Array.isArray(msg) ? msg[0] : msg}`;
+                } else if (errorData.detail) {
+                    errorMessage = errorData.detail;
+                }
+            }
         }
 
         setMessage({ 
@@ -132,54 +143,74 @@ const Settings = () => {
               <div className="p-10 text-center text-slate-400">Loading company details...</div>
           ) : (
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Company Name */}
                 <div className="md:col-span-2 space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Company Name</label>
-                <input 
-                    type="text" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
-                />
+                    <label className="text-sm font-semibold text-slate-700">Company Name</label>
+                    <input 
+                        type="text" 
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                        placeholder="e.g. SheriaFlow Ltd"
+                    />
                 </div>
 
+                {/* KRA PIN */}
                 <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Company KRA PIN</label>
-                <input 
-                    type="text" 
-                    value={formData.kra_pin}
-                    onChange={(e) => setFormData({...formData, kra_pin: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
-                />
+                    <label className="text-sm font-semibold text-slate-700">Company KRA PIN</label>
+                    <input 
+                        type="text" 
+                        value={formData.kra_pin}
+                        onChange={(e) => setFormData({...formData, kra_pin: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                        placeholder="e.g. P051..."
+                    />
                 </div>
 
+                {/* NSSF Number */}
                 <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">NSSF Employer Number</label>
-                <input 
-                    type="text" 
-                    value={formData.nssf_number}
-                    onChange={(e) => setFormData({...formData, nssf_number: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
-                />
+                    <label className="text-sm font-semibold text-slate-700">NSSF Employer Number</label>
+                    <input 
+                        type="text" 
+                        value={formData.nssf_number}
+                        onChange={(e) => setFormData({...formData, nssf_number: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                        placeholder="e.g. 123456"
+                    />
+                </div>
+
+                {/* ✅ ADDED: SHIF Number Input */}
+                <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">SHIF / SHA Number</label>
+                    <input 
+                        type="text" 
+                        value={formData.shif_number}
+                        onChange={(e) => setFormData({...formData, shif_number: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                        placeholder="e.g. SHA-000..."
+                    />
                 </div>
                 
+                {/* Email */}
                 <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Company Email</label>
-                <input 
-                    type="email" 
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
-                />
+                    <label className="text-sm font-semibold text-slate-700">Company Email</label>
+                    <input 
+                        type="email" 
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                    />
                 </div>
 
-                <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700">Physical Address</label>
-                <input 
-                    type="text" 
-                    value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
-                />
+                {/* Address */}
+                <div className="md:col-span-2 space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Physical Address</label>
+                    <input 
+                        type="text" 
+                        value={formData.address}
+                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-700 transition-all" 
+                    />
                 </div>
             </div>
           )}
