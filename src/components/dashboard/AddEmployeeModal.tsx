@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Loader2, Save } from 'lucide-react';
+import { X, Loader2, Save, Calculator } from 'lucide-react';
 import api from '../../api/axios';
 import { isAxiosError } from 'axios'; 
 
@@ -23,8 +23,17 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
     role: 'Staff',
     basic_salary: '',
     house_allowance: '0',
-    transport_allowance: '0'
+    transport_allowance: '0',
+    other_allowances: '0'
   });
+
+  // Calculate Gross Pay Live for Preview
+  const grossPay = (
+    (parseFloat(formData.basic_salary) || 0) + 
+    (parseFloat(formData.house_allowance) || 0) + 
+    (parseFloat(formData.transport_allowance) || 0) + 
+    (parseFloat(formData.other_allowances) || 0)
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -41,11 +50,9 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
     } catch (err) {
       console.error(err);
       
-      // --- FIXED ERROR HANDLING ---
       let errorMessage = "Failed to create employee. Check inputs.";
       
       if (isAxiosError(err) && err.response?.data) {
-          // If backend returns a specific error message or detail
           const data = err.response.data;
           errorMessage = data.detail || data.message || JSON.stringify(data);
       }
@@ -132,9 +139,37 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
               <input name="role" onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
             </div>
 
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="text-sm font-medium text-slate-700">Basic Salary (KES)</label>
-              <input name="basic_salary" type="number" required onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-bold text-slate-800" />
+            {/* --- FINANCIALS SECTION --- */}
+            <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700">Basic Salary (KES)</label>
+                        <input name="basic_salary" type="number" required onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-slate-800" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-slate-600">House Allowance</label>
+                        <input name="house_allowance" type="number" value={formData.house_allowance} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-slate-600">Transport Allowance</label>
+                        <input name="transport_allowance" type="number" value={formData.transport_allowance} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-slate-600">Other Allowances</label>
+                        <input name="other_allowances" type="number" value={formData.other_allowances} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                </div>
+
+                {/* Gross Pay Preview */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                    <div className="flex items-center gap-2 text-slate-500">
+                        <Calculator size={16}/>
+                        <span className="text-xs font-medium">Total Gross Pay</span>
+                    </div>
+                    <span className="text-lg font-bold text-emerald-600">
+                        KES {grossPay.toLocaleString()}
+                    </span>
+                </div>
             </div>
 
           </form>

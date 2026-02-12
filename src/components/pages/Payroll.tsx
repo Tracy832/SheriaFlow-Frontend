@@ -1,17 +1,20 @@
 import { useState, useCallback } from 'react';
 import Header from '../layout/Header';
 import api from '../../api/axios'; 
+import AdjustmentsModal from '../dashboard/AdjustmentModal';
 import { 
   CheckCircle, ChevronRight, Smartphone, Building2, 
-  Loader2, Search, FileText
+  Loader2, Search, FileText, PlusCircle
 } from 'lucide-react';
 
 // --- Interfaces ---
 
-// 1. Raw API Response Type (Fixes 'any' error)
+// 1. Raw API Response Type
 interface PayrollAPIData {
   id: string;
+  payroll_run: number; // Ensure serializer sends this
   employee: {
+    id: number;
     first_name: string;
     last_name: string;
     department?: string;
@@ -29,6 +32,8 @@ interface PayrollAPIData {
 // 2. Frontend Display Type
 interface PayrollRecord {
   id: string;
+  runId: number;      // Needed for Adjustment
+  employeeId: number; // Needed for Adjustment
   employee: string;
   role: string;
   department: string;
@@ -59,7 +64,6 @@ const Payroll = () => {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [selectedYear, setSelectedYear] = useState(2026);
   
-  // FIX: isLoading is now used to show a spinner during fetch
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -69,6 +73,10 @@ const Payroll = () => {
     totalHousing: 0, totalNssf: 0, totalDeductions: 0, totalNetPay: 0
   });
 
+  // Adjustment Modal State
+  const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [adjustmentTarget, setAdjustmentTarget] = useState<{runId: number, employeeId: number, name: string} | null>(null);
+
   // --- Helper to fetch data ---
   const fetchPayroll = useCallback(async () => {
     try {
@@ -77,7 +85,6 @@ const Payroll = () => {
       
       let gross = 0, paye = 0, shif = 0, housing = 0, nssf = 0, net = 0;
 
-      // FIX: Typed 'item' with PayrollAPIData instead of 'any'
       const mappedData: PayrollRecord[] = response.data.map((item: PayrollAPIData) => {
         const iGross = Number(item.gross_pay || 0);
         const iPaye = Number(item.paye_tax || 0);
@@ -91,19 +98,27 @@ const Payroll = () => {
         shif += iShif; housing += iHousing; net += iNet;
 
         let empName = "Unknown";
-        // Safe check for employee object
+        let empId = 0;
+        
         if (item.employee && typeof item.employee === 'object') {
             empName = `${item.employee.first_name} ${item.employee.last_name}`;
+            empId = item.employee.id;
         }
+
+        // Calculate Allowances (Gross - Basic) roughly, or just set 0 if not tracked separately in this view
+        const basic = Number(item.basic_salary_snapshot || 0);
+        const allowances = Math.max(0, iGross - basic);
 
         return {
           id: item.id,
+          runId: item.payroll_run, // IMPORTANT: Ensure serializer sends this
+          employeeId: empId,
           employee: empName,
           role: "Staff",
           department: item.employee?.department || "General",
-          basicSalary: Number(item.basic_salary_snapshot || 0),
+          basicSalary: basic,
           grossPay: iGross,
-          allowances: 0,
+          allowances: allowances,
           deductions: iPaye + iNssf + iShif + iHousing,
           netPay: iNet,
           status: item.is_paid ? 'Paid' : 'Pending',
@@ -161,7 +176,6 @@ const Payroll = () => {
   const handleMarkAsPaid = async () => {
     try {
         setIsProcessing(true);
-        // Add API call to mark as paid here if needed
         alert("Marking as paid (Manual)...");
         setStep(1);
     } finally {
@@ -192,6 +206,15 @@ const Payroll = () => {
     } finally {
         setIsProcessing(false);
     }
+  };
+
+  const handleOpenAdjustment = (record: PayrollRecord) => {
+      setAdjustmentTarget({
+          runId: record.runId,
+          employeeId: record.employeeId,
+          name: record.employee
+      });
+      setIsAdjustmentModalOpen(true);
   };
 
   // --- Components ---
@@ -341,7 +364,7 @@ const Payroll = () => {
                             {payrollData.length === 0 ? (
                                 <tr><td colSpan={6} className="p-8 text-center text-slate-400">No data available.</td></tr>
                             ) : payrollData.map((emp) => (
-                                <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
+                                <tr key={emp.id} className="hover:bg-slate-50 transition-colors group">
                                     <td className="p-4">
                                         <p className="font-semibold text-slate-900">{emp.employee}</p>
                                         <p className="text-xs text-slate-500">{emp.department}</p>
@@ -351,12 +374,23 @@ const Payroll = () => {
                                     <td className="p-4 text-red-600 bg-red-50/30">{formatCurrency(emp.deductions)}</td>
                                     <td className="p-4 font-bold text-slate-900">{formatCurrency(emp.netPay)}</td>
                                     <td className="p-4 text-right">
-                                        <button 
-                                        onClick={() => handleDownloadFile(`/payroll/download-payslip/${emp.id}/`, `Payslip_${emp.employee}.pdf`)}
-                                        className="text-emerald-600 hover:text-emerald-700 font-medium text-xs border border-emerald-200 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1 ml-auto"
-                                        >
-                                        <FileText size={14} /> View Payslip
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            {/* ADJUST BUTTON */}
+                                            <button 
+                                                onClick={() => handleOpenAdjustment(emp)}
+                                                className="text-indigo-600 hover:text-indigo-700 font-medium text-xs border border-indigo-200 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 flex items-center gap-1"
+                                                title="Add Bonus or Deduction"
+                                            >
+                                                <PlusCircle size={14} /> Adjust
+                                            </button>
+
+                                            <button 
+                                                onClick={() => handleDownloadFile(`/payroll/download-payslip/${emp.id}/`, `Payslip_${emp.employee}.pdf`)}
+                                                className="text-emerald-600 hover:text-emerald-700 font-medium text-xs border border-emerald-200 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1"
+                                            >
+                                                <FileText size={14} /> View
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -376,7 +410,7 @@ const Payroll = () => {
             </button>
             <button 
                 onClick={() => setStep(3)}
-                className="flex-[2] py-4 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 flex items-center justify-center gap-2"
+                className="flex-2 py-4 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 flex items-center justify-center gap-2"
             >
                 Continue to Disbursement <ChevronRight size={18} />
             </button>
@@ -443,6 +477,19 @@ const Payroll = () => {
                 Back to Review
             </button>
         </div>
+      )}
+
+      {/* --- ADJUSTMENT MODAL --- */}
+      {isAdjustmentModalOpen && adjustmentTarget && (
+        <AdjustmentsModal 
+          runId={adjustmentTarget.runId} 
+          employeeId={adjustmentTarget.employeeId}
+          employeeName={adjustmentTarget.name}
+          onClose={() => setIsAdjustmentModalOpen(false)}
+          onSave={() => {
+             fetchPayroll(); // Refresh data to show updated Net Pay
+          }}
+        />
       )}
 
     </div>
