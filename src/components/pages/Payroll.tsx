@@ -4,15 +4,15 @@ import api from '../../api/axios';
 import AdjustmentsModal from '../dashboard/AdjustmentModal';
 import { 
   CheckCircle, ChevronRight, Smartphone, Building2, 
-  Loader2, Search, FileText, PlusCircle
+  Loader2, Search, FileText, PlusCircle, Lock
 } from 'lucide-react';
+import { isAxiosError } from 'axios';
 
 // --- Interfaces ---
 
-// 1. Raw API Response Type
 interface PayrollAPIData {
   id: string;
-  payroll_run: number; // Ensure serializer sends this
+  payroll_run: number; 
   employee: {
     id: number;
     first_name: string;
@@ -29,11 +29,10 @@ interface PayrollAPIData {
   is_paid: boolean;
 }
 
-// 2. Frontend Display Type
 interface PayrollRecord {
   id: string;
-  runId: number;      // Needed for Adjustment
-  employeeId: number; // Needed for Adjustment
+  runId: number;      
+  employeeId: number; 
   employee: string;
   role: string;
   department: string;
@@ -46,6 +45,8 @@ interface PayrollRecord {
 }
 
 interface PayrollSummary {
+  runId: number | null; 
+  isLocked: boolean;    
   totalGross: number;
   totalEmployees: number;
   totalPaye: number;
@@ -59,8 +60,7 @@ interface PayrollSummary {
 const formatCurrency = (amount: number) => "KES " + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const Payroll = () => {
-  // --- State ---
-  const [step, setStep] = useState(1); // 1: Select, 2: Review, 3: Disburse
+  const [step, setStep] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [selectedYear, setSelectedYear] = useState(2026);
   
@@ -69,11 +69,11 @@ const Payroll = () => {
   
   const [payrollData, setPayrollData] = useState<PayrollRecord[]>([]);
   const [summary, setSummary] = useState<PayrollSummary>({
+    runId: null, isLocked: false,
     totalGross: 0, totalEmployees: 0, totalPaye: 0, totalShif: 0, 
     totalHousing: 0, totalNssf: 0, totalDeductions: 0, totalNetPay: 0
   });
 
-  // Adjustment Modal State
   const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
   const [adjustmentTarget, setAdjustmentTarget] = useState<{runId: number, employeeId: number, name: string} | null>(null);
 
@@ -84,6 +84,9 @@ const Payroll = () => {
       const response = await api.get('/payroll/payroll/');
       
       let gross = 0, paye = 0, shif = 0, housing = 0, nssf = 0, net = 0;
+      
+      //  FIX 1: Explicitly type this variable so TypeScript doesn't guess 'any'
+      let currentRunId: number | null = null;
 
       const mappedData: PayrollRecord[] = response.data.map((item: PayrollAPIData) => {
         const iGross = Number(item.gross_pay || 0);
@@ -93,25 +96,25 @@ const Payroll = () => {
         const iHousing = Number(item.housing_levy || 0);
         const iNet = Number(item.net_pay || 0);
 
-        // Aggregate Totals
         gross += iGross; paye += iPaye; nssf += iNssf; 
         shif += iShif; housing += iHousing; net += iNet;
 
+        // Capture Run ID from the first entry we find
+        if (currentRunId === null) currentRunId = item.payroll_run;
+
         let empName = "Unknown";
         let empId = 0;
-        
         if (item.employee && typeof item.employee === 'object') {
             empName = `${item.employee.first_name} ${item.employee.last_name}`;
             empId = item.employee.id;
         }
 
-        // Calculate Allowances (Gross - Basic) roughly, or just set 0 if not tracked separately in this view
         const basic = Number(item.basic_salary_snapshot || 0);
         const allowances = Math.max(0, iGross - basic);
 
         return {
           id: item.id,
-          runId: item.payroll_run, // IMPORTANT: Ensure serializer sends this
+          runId: item.payroll_run,
           employeeId: empId,
           employee: empName,
           role: "Staff",
@@ -126,7 +129,9 @@ const Payroll = () => {
       });
 
       setPayrollData(mappedData);
-      setSummary({
+      setSummary(prev => ({
+        ...prev,
+        runId: currentRunId,
         totalGross: gross,
         totalEmployees: mappedData.length,
         totalPaye: paye,
@@ -135,7 +140,7 @@ const Payroll = () => {
         totalNssf: nssf,
         totalDeductions: paye + shif + housing + nssf,
         totalNetPay: net
-      });
+      }));
 
     } catch (err) {
       console.error("Failed to load payroll", err);
@@ -150,10 +155,38 @@ const Payroll = () => {
       setIsProcessing(true);
       await api.post('/payroll/generate/', { month: selectedMonth, year: selectedYear });
       await fetchPayroll();
-      setStep(2); // Move to Review Step
+      setSummary(prev => ({ ...prev, isLocked: false })); // Reset lock on new gen
+      setStep(2); 
     } catch (err) {
       console.error(err);
       alert("Failed to generate payroll.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // --- LOCK FUNCTION ---
+  const handleLockPayroll = async () => {
+    if (!summary.runId) return;
+    
+    const confirm = window.confirm("Are you sure you want to LOCK this payroll? \n\nThis will prevent any further adjustments or recalculations.");
+    if (!confirm) return;
+
+    try {
+      setIsProcessing(true);
+      await api.post(`/payroll/runs/${summary.runId}/lock/`);
+      setSummary(prev => ({ ...prev, isLocked: true })); // Update UI state
+      alert("Payroll has been locked successfully.");
+    } catch (err: unknown) { 
+      console.error(err);
+      
+      
+      if (isAxiosError(err) && err.response?.data?.error === "This payroll is already locked.") {
+          setSummary(prev => ({ ...prev, isLocked: true }));
+          alert("This payroll is already locked.");
+      } else {
+          alert("Failed to lock payroll.");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -209,6 +242,11 @@ const Payroll = () => {
   };
 
   const handleOpenAdjustment = (record: PayrollRecord) => {
+      // Prevent adjustments if locked
+      if (summary.isLocked) {
+          alert("This payroll is locked. You cannot make adjustments.");
+          return;
+      }
       setAdjustmentTarget({
           runId: record.runId,
           employeeId: record.employeeId,
@@ -333,7 +371,7 @@ const Payroll = () => {
             </div>
           </div>
 
-          {/* --- THE TABLE IS BACK --- */}
+          {/* Employee Table */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                  <h3 className="font-bold text-slate-900">Employee List</h3>
@@ -343,7 +381,6 @@ const Payroll = () => {
                  </div>
              </div>
              <div className="overflow-x-auto">
-                 {/* FIX: Show loading spinner for table data */}
                  {isLoading ? (
                     <div className="p-12 flex justify-center">
                         <Loader2 className="animate-spin text-emerald-600" size={32} />
@@ -375,13 +412,19 @@ const Payroll = () => {
                                     <td className="p-4 font-bold text-slate-900">{formatCurrency(emp.netPay)}</td>
                                     <td className="p-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            {/* ADJUST BUTTON */}
+                                            {/* ADJUST BUTTON (Disabled if Locked) */}
                                             <button 
                                                 onClick={() => handleOpenAdjustment(emp)}
-                                                className="text-indigo-600 hover:text-indigo-700 font-medium text-xs border border-indigo-200 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 flex items-center gap-1"
-                                                title="Add Bonus or Deduction"
+                                                disabled={summary.isLocked}
+                                                className={`
+                                                  text-xs border px-3 py-1.5 rounded-lg flex items-center gap-1
+                                                  ${summary.isLocked 
+                                                    ? 'text-slate-400 border-slate-200 cursor-not-allowed bg-slate-50' 
+                                                    : 'text-indigo-600 hover:text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100'}
+                                                `}
+                                                title={summary.isLocked ? "Payroll is locked" : "Add Bonus or Deduction"}
                                             >
-                                                <PlusCircle size={14} /> Adjust
+                                                {summary.isLocked ? <Lock size={12}/> : <PlusCircle size={14} />} Adjust
                                             </button>
 
                                             <button 
@@ -408,9 +451,22 @@ const Payroll = () => {
             >
                 Back
             </button>
+            
+            {/* LOCK PAYROLL BUTTON */}
+            {!summary.isLocked && summary.runId && (
+                <button 
+                    onClick={handleLockPayroll}
+                    disabled={isProcessing}
+                    className="flex-1 py-4 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 flex items-center justify-center gap-2"
+                >
+                    {isProcessing ? <Loader2 className="animate-spin" size={18}/> : <Lock size={18} />} Lock Payroll
+                </button>
+            )}
+
+            {/* ✅ FIX 3: Replaced flex-[2] with explicit standard classes */}
             <button 
                 onClick={() => setStep(3)}
-                className="flex-2 py-4 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 flex items-center justify-center gap-2"
+                className="flex-auto w-2/3 py-4 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 flex items-center justify-center gap-2"
             >
                 Continue to Disbursement <ChevronRight size={18} />
             </button>
@@ -435,7 +491,6 @@ const Payroll = () => {
             <h3 className="font-bold text-slate-900">Select Disbursement Method</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Option 1: M-Pesa */}
                 <button 
                     onClick={handleMpesaDisbursement}
                     disabled={isProcessing}
@@ -449,11 +504,9 @@ const Payroll = () => {
                             {summary.totalEmployees} employees will receive via M-Pesa
                         </div>
                     </div>
-                    {/* Decorative Circle */}
                     <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full group-hover:scale-150 transition-transform duration-500" />
                 </button>
 
-                {/* Option 2: Manual / Bank */}
                 <button 
                     onClick={handleMarkAsPaid}
                     disabled={isProcessing}
@@ -463,9 +516,6 @@ const Payroll = () => {
                         <Building2 size={32} className="mb-4" />
                         <h3 className="text-xl font-bold mb-2">Mark as Paid</h3>
                         <p className="text-slate-400 text-sm mb-6">Manual bank transfer completed separately</p>
-                        <div className="inline-flex items-center gap-2 text-xs bg-white/10 px-3 py-1 rounded-full text-slate-300">
-                            Update status without auto-disbursement
-                        </div>
                     </div>
                 </button>
             </div>
@@ -479,7 +529,6 @@ const Payroll = () => {
         </div>
       )}
 
-      {/* --- ADJUSTMENT MODAL --- */}
       {isAdjustmentModalOpen && adjustmentTarget && (
         <AdjustmentsModal 
           runId={adjustmentTarget.runId} 
@@ -487,7 +536,7 @@ const Payroll = () => {
           employeeName={adjustmentTarget.name}
           onClose={() => setIsAdjustmentModalOpen(false)}
           onSave={() => {
-             fetchPayroll(); // Refresh data to show updated Net Pay
+             fetchPayroll(); 
           }}
         />
       )}
