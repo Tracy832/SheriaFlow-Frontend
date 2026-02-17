@@ -24,7 +24,9 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
     basic_salary: '',
     house_allowance: '0',
     transport_allowance: '0',
-    other_allowances: '0'
+    other_allowances: '0',
+    joining_date: '',
+    termination_date: ''
   });
 
   // Calculate Gross Pay Live for Preview
@@ -138,6 +140,45 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
               <label className="text-sm font-medium text-slate-700">Role Title</label>
               <input name="role" onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
             </div>
+            <div className="md:col-span-2 pt-4 mt-2 border-t border-slate-100">
+               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                 Contract Dates
+               </h3>
+               <div className="grid grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-xs font-medium text-slate-700 mb-1">
+                     Joining Date <span className="text-red-500">*</span>
+                   </label>
+                   <input 
+                     type="date" 
+                     name="joining_date" 
+                     value={formData.joining_date || ''} 
+                     onChange={handleChange} 
+                     className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" 
+                     required
+                   />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-medium text-slate-700 mb-1">
+                     Termination Date <span className="text-slate-400 font-normal">(Optional)</span>
+                   </label>
+                   <input 
+                     type="date" 
+                     name="termination_date" 
+                     value={formData.termination_date || ''} 
+                     onChange={handleChange} 
+                     className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 bg-slate-50" 
+                   />
+                   <p className="text-[10px] text-slate-500 mt-1">
+                     Leave blank for permanent staff. Pay stops after this date.
+                   </p>
+                 </div>
+               </div>
+            </div>
+            {/* ------------------------------------------ */}
+
+            {/* --- FINANCIALS SECTION --- */}
+            <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4"></div>
 
             {/* --- FINANCIALS SECTION --- */}
             <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">

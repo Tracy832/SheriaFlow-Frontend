@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Header from '../layout/Header';
 import api from '../../api/axios'; 
 import AdjustmentsModal from '../dashboard/AdjustmentModal';
@@ -63,6 +63,8 @@ const Payroll = () => {
   const [step, setStep] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [selectedYear, setSelectedYear] = useState(2026);
+  // --- STATE FOR RUN TYPE ---
+  const [runType, setRunType] = useState<'REGULAR' | 'OFF_CYCLE'>('REGULAR');
   
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -81,11 +83,10 @@ const Payroll = () => {
   const fetchPayroll = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/payroll/payroll/');
+      // ✅ FIX: Use backticks for string interpolation to send the actual runType
+      const response = await api.get(`/payroll/payroll/?run_type=${runType}`);
       
       let gross = 0, paye = 0, shif = 0, housing = 0, nssf = 0, net = 0;
-      
-      //  FIX 1: Explicitly type this variable so TypeScript doesn't guess 'any'
       let currentRunId: number | null = null;
 
       const mappedData: PayrollRecord[] = response.data.map((item: PayrollAPIData) => {
@@ -99,7 +100,6 @@ const Payroll = () => {
         gross += iGross; paye += iPaye; nssf += iNssf; 
         shif += iShif; housing += iHousing; net += iNet;
 
-        // Capture Run ID from the first entry we find
         if (currentRunId === null) currentRunId = item.payroll_run;
 
         let empName = "Unknown";
@@ -147,19 +147,58 @@ const Payroll = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [runType]); // Re-fetch if runType changes
+
+  // Load initial data
+  useEffect(() => {
+      fetchPayroll();
+  }, [fetchPayroll]);
 
   // --- Actions ---
-  const handleGeneratePayroll = async () => {
+
+  // ✅ UPDATED: Handle Generate with Fraud Detection Override
+  const handleGeneratePayroll = async (override = false) => {
     try {
       setIsProcessing(true);
-      await api.post('/payroll/generate/', { month: selectedMonth, year: selectedYear });
+      
+      // We pass 'confirm_override: true' only if the user explicitly agreed after a warning
+      await api.post('/payroll/generate/', { 
+          month: selectedMonth, 
+          year: selectedYear,
+          run_type: runType,
+          confirm_override: override 
+      });
+
       await fetchPayroll();
-      setSummary(prev => ({ ...prev, isLocked: false })); // Reset lock on new gen
+      setSummary(prev => ({ ...prev, isLocked: false })); 
       setStep(2); 
-    } catch (err) {
+
+    } catch (err: unknown) {
       console.error(err);
-      alert("Failed to generate payroll.");
+      
+      if (isAxiosError(err) && err.response?.data) {
+          const data = err.response.data;
+
+          // --- HANDLE FRAUD WARNINGS ---
+          if (data.error_code === "FRAUD_DETECTED") {
+              const warnings = Array.isArray(data.warnings) ? data.warnings.join("\n\n") : data.warnings;
+              const message = `Security Alert: Unusual Salary Spikes Detected!\n\n${warnings}\n\nDo you want to proceed anyway?`;
+              
+              if (window.confirm(message)) {
+                  // User clicked "OK", so we call this function again with override=true
+                  handleGeneratePayroll(true);
+                  return;
+              }
+          } 
+          // --- HANDLE LOCKED PAYROLL ---
+          else if (data.error) {
+              alert(data.error);
+          } else {
+              alert("Failed to generate payroll.");
+          }
+      } else {
+          alert("An unexpected error occurred.");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -177,10 +216,8 @@ const Payroll = () => {
       await api.post(`/payroll/runs/${summary.runId}/lock/`);
       setSummary(prev => ({ ...prev, isLocked: true })); // Update UI state
       alert("Payroll has been locked successfully.");
-    } catch (err: unknown) { 
+    } catch (err: unknown) {
       console.error(err);
-      
-      
       if (isAxiosError(err) && err.response?.data?.error === "This payroll is already locked.") {
           setSummary(prev => ({ ...prev, isLocked: true }));
           alert("This payroll is already locked.");
@@ -317,12 +354,42 @@ const Payroll = () => {
             </div>
           </div>
 
+          {/* --- RUN TYPE SELECTOR --- */}
+          <div className="mb-8">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Payroll Type</label>
+                <div className="grid grid-cols-2 gap-4">
+                    <button
+                        onClick={() => setRunType('REGULAR')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                            runType === 'REGULAR' 
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-800' 
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                    >
+                        <div className="font-bold">Regular Monthly</div>
+                        <div className="text-xs opacity-70 mt-1">Basic Salary + Allowances + Tax</div>
+                    </button>
+
+                    <button
+                        onClick={() => setRunType('OFF_CYCLE')}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${
+                            runType === 'OFF_CYCLE' 
+                            ? 'border-amber-500 bg-amber-50 text-amber-800' 
+                            : 'border-slate-100 hover:border-slate-200'
+                        }`}
+                    >
+                        <div className="font-bold">Off-Cycle / Adhoc</div>
+                        <div className="text-xs opacity-70 mt-1">Zero Salary. Manual Bonuses/Exit Dues only.</div>
+                    </button>
+                </div>
+          </div>
+
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mb-8">
-            <p className="text-sm text-slate-500">Selected Period: <span className="font-bold text-slate-900">{new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span></p>
+            <p className="text-sm text-slate-500">Selected Period: <span className="font-bold text-slate-900">{new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span> ({runType})</p>
           </div>
 
           <button 
-            onClick={handleGeneratePayroll}
+            onClick={() => handleGeneratePayroll(false)}
             disabled={isProcessing}
             className="w-full bg-slate-900 text-white py-4 rounded-lg font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
           >
@@ -463,7 +530,6 @@ const Payroll = () => {
                 </button>
             )}
 
-            {/* ✅ FIX 3: Replaced flex-[2] with explicit standard classes */}
             <button 
                 onClick={() => setStep(3)}
                 className="flex-auto w-2/3 py-4 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 flex items-center justify-center gap-2"
