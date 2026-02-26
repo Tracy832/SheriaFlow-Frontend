@@ -4,8 +4,10 @@ import StatCard from '../common/StatCard'; // Keeping your existing import
 import PayrollChart from './PayrollChart';
 import RecentActivity from './RecentActivity';
 import RecentPayrolls from './RecentPayrolls';
+import SubscriptionModal from '../subscription/SubscriptionModal'
 import { Users, DollarSign, Calendar, ShieldCheck, Loader2 } from 'lucide-react'; // <--- Added Loader2
 import api from '../../api/axios';
+
 
 interface DashboardStats {
   total_employees: number;
@@ -23,20 +25,39 @@ const Dashboard = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  
+  // --- SUBSCRIPTION STATE ---
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [userPhone, setUserPhone] = useState('');
+
+  // Combined Fetch Logic
+  const fetchDashboardData = async () => {
+    try {
+      // 1. Fetch User Profile to check Subscription Status
+      // We assume /users/me/ returns { company: { has_access: bool }, phone_number: "..." }
+      const userRes = await api.get('/users/me/');
+      const userData = userRes.data;
+      
+      setUserPhone(userData.phone_number);
+
+      // If user has NO access (Plan expired or new account), show modal
+      if (!userData.company?.has_access) {
+          setShowSubscriptionModal(true);
+      }
+
+      // 2. Fetch Stats
+      const statsRes = await api.get('/payroll/stats/');
+      setStats(statsRes.data);
+
+    } catch (err) {
+      console.error("Failed to load dashboard data", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get('/payroll/stats/');
-        setStats(response.data);
-      } catch (err) {
-        console.error("Failed to load dashboard stats", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   // Helper to format date
@@ -47,9 +68,7 @@ const Dashboard = () => {
     year: 'numeric'
   });
 
-  // --- THE FIX: Early Return for Loading State ---
-  // This prevents child components (like Charts) from rendering 
-  // and crashing before data is ready.
+  // Early Return for Loading State
   if (isLoading) {
     return (
         <div className="flex items-center justify-center h-screen bg-slate-50">
@@ -62,7 +81,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500 relative">
       
       {/* 1. Page Header */}
       <Header 
@@ -117,6 +136,18 @@ const Dashboard = () => {
       <div className="min-h-[400px]">
         <RecentPayrolls />
       </div>
+
+      {/* --- THE GATEKEEPER MODAL --- */}
+      {/* This will overlay everything if showSubscriptionModal is true */}
+      <SubscriptionModal 
+        isOpen={showSubscriptionModal} 
+        userPhone={userPhone}
+        onSuccess={() => {
+           setShowSubscriptionModal(false);
+           // Refresh data to confirm access is now granted
+           fetchDashboardData();
+        }}
+      />
 
     </div>
   );

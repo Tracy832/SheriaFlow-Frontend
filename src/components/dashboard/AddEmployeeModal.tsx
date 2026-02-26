@@ -46,8 +46,25 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
     setIsSubmitting(true);
     setError('');
 
+    // --- FIX: Sanitize Data before sending ---
+    const payload = {
+        ...formData,
+        // 1. Force KRA PIN to Uppercase
+        kra_pin: formData.kra_pin.toUpperCase(),
+        
+        // 2. Convert empty date strings to null so Django doesn't crash
+        joining_date: formData.joining_date || null,
+        termination_date: formData.termination_date || null,
+        
+        // 3. Ensure numeric fields are numbers (optional safety check)
+        basic_salary: formData.basic_salary || 0,
+        house_allowance: formData.house_allowance || 0,
+        transport_allowance: formData.transport_allowance || 0,
+        other_allowances: formData.other_allowances || 0,
+    };
+
     try {
-      await api.post('/employees/', formData);
+      await api.post('/employees/', payload);
       onSuccess(); // Close modal and refresh list
     } catch (err) {
       console.error(err);
@@ -56,7 +73,10 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
       
       if (isAxiosError(err) && err.response?.data) {
           const data = err.response.data;
-          errorMessage = data.detail || data.message || JSON.stringify(data);
+          // Handle specific field errors (like KRA PIN format)
+          if (data.kra_pin) errorMessage = `KRA PIN Error: ${data.kra_pin[0]}`;
+          else if (data.termination_date) errorMessage = `Date Error: ${data.termination_date[0]}`;
+          else errorMessage = data.detail || data.message || JSON.stringify(data);
       }
       
       setError(errorMessage);
@@ -83,7 +103,7 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
         {/* Scrollable Form Body */}
         <div className="p-6 overflow-y-auto custom-scrollbar">
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-100">
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-100 font-medium">
               {error}
             </div>
           )}
@@ -176,9 +196,6 @@ const AddEmployeeModal = ({ onClose, onSuccess }: AddEmployeeModalProps) => {
                </div>
             </div>
             {/* ------------------------------------------ */}
-
-            {/* --- FINANCIALS SECTION --- */}
-            <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4"></div>
 
             {/* --- FINANCIALS SECTION --- */}
             <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-4">
