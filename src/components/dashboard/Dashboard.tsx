@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import Header from '../layout/Header';
-import StatCard from '../common/StatCard'; // Keeping your existing import
+import StatCard from '../common/StatCard'; 
 import PayrollChart from './PayrollChart';
 import RecentActivity from './RecentActivity';
 import RecentPayrolls from './RecentPayrolls';
 import SubscriptionModal from '../subscription/SubscriptionModal'
-import { Users, DollarSign, Calendar, ShieldCheck, Loader2 } from 'lucide-react'; // <--- Added Loader2
+import { Users, DollarSign, Calendar, ShieldCheck, Loader2 } from 'lucide-react'; 
 import api from '../../api/axios';
 
 
@@ -34,7 +34,6 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       // 1. Fetch User Profile to check Subscription Status
-      // We assume /users/me/ returns { company: { has_access: bool }, phone_number: "..." }
       const userRes = await api.get('/users/me/');
       const userData = userRes.data;
       
@@ -71,23 +70,22 @@ const Dashboard = () => {
   // Early Return for Loading State
   if (isLoading) {
     return (
-        <div className="flex items-center justify-center h-screen bg-slate-50">
+        <div className="flex items-center justify-center h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
             <div className="flex flex-col items-center gap-4">
-                <Loader2 className="animate-spin text-emerald-600" size={48} />
-                <p className="text-slate-500 font-medium animate-pulse">Loading Dashboard...</p>
+                <Loader2 className="animate-spin text-emerald-600 dark:text-emerald-500" size={48} />
+                <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">Loading Dashboard...</p>
             </div>
         </div>
     );
   }
 
   return (
-    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500 relative">
+    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500 relative text-slate-900 dark:text-slate-100 transition-colors duration-200">
       
       {/* 1. Page Header */}
       <Header 
         title="Dashboard" 
         subtitle={today}
-        user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
       />
 
       {/* 2. Stat Cards Grid */}

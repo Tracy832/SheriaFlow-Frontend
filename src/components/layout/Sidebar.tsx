@@ -16,8 +16,8 @@ const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Users, label: "Employees", path: "/employees" },
-    { icon: Banknote, label: "Payroll", path: "/payroll" },       // Updated Icon for clarity
-    { icon: FileBarChart, label: "Reports", path: "/reports" },   // <--- RESTORED
+    { icon: Banknote, label: "Payroll", path: "/payroll" },
+    { icon: FileBarChart, label: "Reports", path: "/reports" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
@@ -25,7 +25,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
     <>
       {/* Mobile Menu Button */}
       <button 
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 text-white rounded-lg shadow-lg"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 dark:bg-slate-800 text-white rounded-lg shadow-lg"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
         <Menu size={20} />
@@ -33,7 +33,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
 
       {/* Sidebar Container */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 bg-[#0f172a] text-slate-300 transition-all duration-300 ease-in-out flex flex-col
+        fixed inset-y-0 left-0 z-40 bg-[#0f172a] dark:bg-slate-950 text-slate-300 transition-all duration-300 ease-in-out flex flex-col border-r border-transparent dark:border-slate-800
         ${isCollapsed ? 'w-20' : 'w-64'}
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
@@ -45,7 +45,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
               SF
             </div>
             {!isCollapsed && (
-              <div>
+              <div className="animate-in fade-in duration-300">
                 <h1 className="font-bold text-white tracking-tight">SheriaFlow</h1>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Payroll System</p>
               </div>
@@ -64,7 +64,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
                 flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden
                 ${isActive 
                   ? 'bg-emerald-500/10 text-emerald-400 shadow-inner' 
-                  : 'hover:bg-slate-800/50 hover:text-white'
+                  : 'hover:bg-slate-800/50 dark:hover:bg-slate-800/30 hover:text-white'
                 }
               `}
             >
@@ -81,7 +81,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
 
                   {/* Tooltip for collapsed state */}
                   {isCollapsed && (
-                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">
+                    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 px-2 py-1 bg-slate-800 dark:bg-slate-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700 dark:border-slate-600 transition-opacity">
                       {item.label}
                     </div>
                   )}
@@ -95,7 +95,7 @@ const Sidebar = ({ isCollapsed, toggleCollapse }: SidebarProps) => {
         <div className="p-4 border-t border-slate-800/50 hidden md:flex">
           <button 
             onClick={toggleCollapse}
-            className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
+            className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-slate-800/50 dark:hover:bg-slate-800/30 text-slate-400 hover:text-white transition-colors"
           >
             <ChevronLeft size={20} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
           </button>

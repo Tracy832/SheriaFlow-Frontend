@@ -36,24 +36,24 @@ const RecentPayrolls = () => {
   }, []);
 
   if (isLoading) {
-    return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-slate-400" /></div>;
+    return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-slate-400 dark:text-slate-500" /></div>;
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
-      <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-        <h3 className="font-bold text-slate-900">Recent Transactions</h3>
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden h-full flex flex-col transition-colors duration-200">
+      <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 transition-colors duration-200">
+        <h3 className="font-bold text-slate-900 dark:text-white">Recent Transactions</h3>
         <button 
           onClick={() => navigate('/payroll')}
-          className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline"
+          className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline transition-colors"
         >
           View All
         </button>
       </div>
 
       <div className="overflow-x-auto flex-1">
-        <table className="w-full text-left text-sm text-slate-600">
-          <thead className="bg-slate-50 text-xs uppercase font-semibold text-slate-500">
+        <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+          <thead className="bg-slate-50 dark:bg-slate-900/50 text-xs uppercase font-semibold text-slate-500 dark:text-slate-400 transition-colors duration-200">
             <tr>
               <th className="p-4">Employee</th>
               <th className="p-4">Net Pay</th>
@@ -61,30 +61,29 @@ const RecentPayrolls = () => {
               <th className="p-4 text-right">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
             {payrolls.length === 0 ? (
                 <tr>
-                    <td colSpan={4} className="p-8 text-center text-slate-400">No recent transactions.</td>
+                    <td colSpan={4} className="p-8 text-center text-slate-400 dark:text-slate-500">No recent transactions.</td>
                 </tr>
             ) : (
                 payrolls.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="p-4 font-medium text-slate-900">
-                        {/* FIX: Render the Name string, not the Object */}
+                <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors">
+                    <td className="p-4 font-medium text-slate-900 dark:text-slate-200">
                         {item.employee.first_name} {item.employee.last_name}
-                        <div className="text-xs text-slate-400 font-normal">{item.employee.department}</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500 font-normal">{item.employee.department}</div>
                     </td>
-                    <td className="p-4 font-bold text-slate-700">
+                    <td className="p-4 font-bold text-slate-700 dark:text-slate-300">
                         KES {Number(item.net_pay).toLocaleString()}
                     </td>
-                    <td className="p-4 text-slate-500 text-xs">
+                    <td className="p-4 text-slate-500 dark:text-slate-400 text-xs">
                         {new Date(item.created_at).toLocaleDateString()}
                     </td>
                     <td className="p-4 text-right">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-colors ${
                         item.is_paid 
-                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                        : 'bg-amber-50 text-amber-600 border border-amber-100'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20' 
+                        : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20'
                     }`}>
                         {item.is_paid ? 'Paid' : 'Pending'}
                     </span>

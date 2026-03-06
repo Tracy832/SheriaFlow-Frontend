@@ -294,47 +294,46 @@ const Payroll = () => {
 
   // --- Components ---
   const StepIndicator = () => (
-    <div className="flex items-center justify-between mb-8 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+    <div className="flex items-center justify-between mb-8 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
       {[1, 2, 3].map((s) => (
         <div key={s} className="flex items-center">
           <div className={`
             w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors
-            ${step >= s ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}
+            ${step >= s ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500'}
           `}>
             {step > s ? <CheckCircle size={16} /> : s}
           </div>
-          <span className={`ml-3 text-sm font-medium hidden md:block ${step >= s ? 'text-slate-900' : 'text-slate-400'}`}>
+          <span className={`ml-3 text-sm font-medium hidden md:block ${step >= s ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
             {s === 1 ? 'Select Period' : s === 2 ? 'Review Calculation' : 'Disburse'}
           </span>
-          {s < 3 && <div className="w-12 h-px bg-slate-200 mx-4 hidden md:block" />}
+          {s < 3 && <div className="w-12 h-px bg-slate-200 dark:bg-slate-700 mx-4 hidden md:block" />}
         </div>
       ))}
     </div>
   );
 
   return (
-    <div className="p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    <div className="p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 text-slate-900 dark:text-slate-100">
       
       <Header 
         title="Payroll Processing" 
         subtitle="Process monthly salaries and manage disbursements"
-        user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
       />
 
       <StepIndicator />
 
       {/* --- STEP 1: SELECT PERIOD --- */}
       {step === 1 && (
-        <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm max-w-4xl mx-auto">
-          <h2 className="text-lg font-bold text-slate-900 mb-6">Select Payroll Period</h2>
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm max-w-4xl mx-auto transition-colors duration-200">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Select Payroll Period</h2>
           
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Month</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Month</label>
               <select 
                 value={selectedMonth} 
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500"
+                className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 text-slate-700 dark:text-slate-200 transition-colors"
               >
                 {Array.from({length: 12}, (_, i) => (
                   <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('default', {month: 'long'})}</option>
@@ -342,11 +341,11 @@ const Payroll = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Year</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Year</label>
               <select 
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500"
+                className="w-full p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 text-slate-700 dark:text-slate-200 transition-colors"
               >
                 <option value={2025}>2025</option>
                 <option value={2026}>2026</option>
@@ -356,14 +355,14 @@ const Payroll = () => {
 
           {/* --- RUN TYPE SELECTOR --- */}
           <div className="mb-8">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Payroll Type</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Payroll Type</label>
                 <div className="grid grid-cols-2 gap-4">
                     <button
                         onClick={() => setRunType('REGULAR')}
                         className={`p-4 rounded-xl border-2 text-left transition-all ${
                             runType === 'REGULAR' 
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-800' 
-                            : 'border-slate-100 hover:border-slate-200'
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400' 
+                            : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                         }`}
                     >
                         <div className="font-bold">Regular Monthly</div>
@@ -374,8 +373,8 @@ const Payroll = () => {
                         onClick={() => setRunType('OFF_CYCLE')}
                         className={`p-4 rounded-xl border-2 text-left transition-all ${
                             runType === 'OFF_CYCLE' 
-                            ? 'border-amber-500 bg-amber-50 text-amber-800' 
-                            : 'border-slate-100 hover:border-slate-200'
+                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400' 
+                            : 'border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                         }`}
                     >
                         <div className="font-bold">Off-Cycle / Adhoc</div>
@@ -384,14 +383,14 @@ const Payroll = () => {
                 </div>
           </div>
 
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 mb-8">
-            <p className="text-sm text-slate-500">Selected Period: <span className="font-bold text-slate-900">{new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span> ({runType})</p>
+          <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-100 dark:border-slate-700 mb-8">
+            <p className="text-sm text-slate-500 dark:text-slate-400">Selected Period: <span className="font-bold text-slate-900 dark:text-white">{new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span> ({runType})</p>
           </div>
 
           <button 
             onClick={() => handleGeneratePayroll(false)}
             disabled={isProcessing}
-            className="w-full bg-slate-900 text-white py-4 rounded-lg font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-slate-900 dark:bg-emerald-600 text-white py-4 rounded-lg font-bold hover:bg-slate-800 dark:hover:bg-emerald-500 transition-colors flex items-center justify-center gap-2"
           >
             {isProcessing ? <Loader2 className="animate-spin" /> : 'Generate Payroll'} <ChevronRight size={18} />
           </button>
@@ -403,20 +402,20 @@ const Payroll = () => {
         <div className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-sm text-slate-500 mb-1">Total Gross Pay</p>
-                <h3 className="text-3xl font-bold text-slate-900">{formatCurrency(summary.totalGross)}</h3>
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Gross Pay</p>
+                <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{formatCurrency(summary.totalGross)}</h3>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-sm text-slate-500 mb-1">Total Employees</p>
-                <h3 className="text-3xl font-bold text-slate-900">{summary.totalEmployees}</h3>
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Employees</p>
+                <h3 className="text-3xl font-bold text-slate-900 dark:text-white">{summary.totalEmployees}</h3>
             </div>
           </div>
 
           {/* Breakdown Card */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100">
-                <h3 className="font-bold text-slate-900">Deduction Breakdown</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors duration-200">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+                <h3 className="font-bold text-slate-900 dark:text-white">Deduction Breakdown</h3>
             </div>
             <div className="p-6 space-y-4">
                 {[
@@ -426,57 +425,57 @@ const Payroll = () => {
                     { label: "NSSF (Pension)", val: summary.totalNssf },
                 ].map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600">{item.label}</span>
-                        <span className="font-semibold text-slate-900">{formatCurrency(item.val)}</span>
+                        <span className="text-slate-600 dark:text-slate-400">{item.label}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">{formatCurrency(item.val)}</span>
                     </div>
                 ))}
-                <div className="h-px bg-slate-100 my-4" />
-                <div className="flex justify-between items-center bg-emerald-50 p-4 rounded-lg border border-emerald-100">
-                    <span className="font-bold text-emerald-800">Net Pay (Take Home)</span>
-                    <span className="font-bold text-emerald-800 text-xl">{formatCurrency(summary.totalNetPay)}</span>
+                <div className="h-px bg-slate-100 dark:bg-slate-700 my-4" />
+                <div className="flex justify-between items-center bg-emerald-50 dark:bg-emerald-500/10 p-4 rounded-lg border border-emerald-100 dark:border-emerald-500/30">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-400">Net Pay (Take Home)</span>
+                    <span className="font-bold text-emerald-800 dark:text-emerald-400 text-xl">{formatCurrency(summary.totalNetPay)}</span>
                 </div>
             </div>
           </div>
 
           {/* Employee Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                 <h3 className="font-bold text-slate-900">Employee List</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden transition-colors duration-200">
+             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                 <h3 className="font-bold text-slate-900 dark:text-white">Employee List</h3>
                  <div className="relative">
-                     <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
-                     <input type="text" placeholder="Search..." className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-48 focus:outline-none focus:border-emerald-500" />
+                     <Search size={16} className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" />
+                     <input type="text" placeholder="Search..." className="bg-transparent pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm w-48 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 dark:text-white dark:placeholder:text-slate-500 transition-all" />
                  </div>
              </div>
              <div className="overflow-x-auto">
                  {isLoading ? (
                     <div className="p-12 flex justify-center">
-                        <Loader2 className="animate-spin text-emerald-600" size={32} />
+                        <Loader2 className="animate-spin text-emerald-600 dark:text-emerald-500" size={32} />
                     </div>
                  ) : (
-                    <table className="w-full text-left text-sm text-slate-600">
-                        <thead className="bg-slate-50 text-slate-900 font-semibold uppercase text-xs">
+                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                        <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white font-semibold uppercase text-xs">
                             <tr>
                                 <th className="p-4">Employee</th>
                                 <th className="p-4">Basic Salary</th>
-                                <th className="p-4 text-emerald-600">Allowances</th>
-                                <th className="p-4 text-red-600">Deductions</th>
+                                <th className="p-4 text-emerald-600 dark:text-emerald-400">Allowances</th>
+                                <th className="p-4 text-red-600 dark:text-red-400">Deductions</th>
                                 <th className="p-4">Net Pay</th>
                                 <th className="p-4 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                             {payrollData.length === 0 ? (
-                                <tr><td colSpan={6} className="p-8 text-center text-slate-400">No data available.</td></tr>
+                                <tr><td colSpan={6} className="p-8 text-center text-slate-400 dark:text-slate-500">No data available.</td></tr>
                             ) : payrollData.map((emp) => (
-                                <tr key={emp.id} className="hover:bg-slate-50 transition-colors group">
+                                <tr key={emp.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
                                     <td className="p-4">
-                                        <p className="font-semibold text-slate-900">{emp.employee}</p>
-                                        <p className="text-xs text-slate-500">{emp.department}</p>
+                                        <p className="font-semibold text-slate-900 dark:text-white">{emp.employee}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{emp.department}</p>
                                     </td>
-                                    <td className="p-4 font-medium">{formatCurrency(emp.basicSalary)}</td>
-                                    <td className="p-4 text-emerald-600 bg-emerald-50/30">{formatCurrency(emp.allowances)}</td>
-                                    <td className="p-4 text-red-600 bg-red-50/30">{formatCurrency(emp.deductions)}</td>
-                                    <td className="p-4 font-bold text-slate-900">{formatCurrency(emp.netPay)}</td>
+                                    <td className="p-4 font-medium text-slate-700 dark:text-slate-300">{formatCurrency(emp.basicSalary)}</td>
+                                    <td className="p-4 text-emerald-600 dark:text-emerald-400 bg-emerald-50/30 dark:bg-emerald-500/5">{formatCurrency(emp.allowances)}</td>
+                                    <td className="p-4 text-red-600 dark:text-red-400 bg-red-50/30 dark:bg-red-500/5">{formatCurrency(emp.deductions)}</td>
+                                    <td className="p-4 font-bold text-slate-900 dark:text-white">{formatCurrency(emp.netPay)}</td>
                                     <td className="p-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             {/* ADJUST BUTTON (Disabled if Locked) */}
@@ -484,10 +483,10 @@ const Payroll = () => {
                                                 onClick={() => handleOpenAdjustment(emp)}
                                                 disabled={summary.isLocked}
                                                 className={`
-                                                  text-xs border px-3 py-1.5 rounded-lg flex items-center gap-1
+                                                  text-xs border px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors
                                                   ${summary.isLocked 
-                                                    ? 'text-slate-400 border-slate-200 cursor-not-allowed bg-slate-50' 
-                                                    : 'text-indigo-600 hover:text-indigo-700 border-indigo-200 bg-indigo-50 hover:bg-indigo-100'}
+                                                    ? 'text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 cursor-not-allowed bg-slate-50 dark:bg-slate-800' 
+                                                    : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 border-indigo-200 dark:border-indigo-500/30 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20'}
                                                 `}
                                                 title={summary.isLocked ? "Payroll is locked" : "Add Bonus or Deduction"}
                                             >
@@ -496,7 +495,7 @@ const Payroll = () => {
 
                                             <button 
                                                 onClick={() => handleDownloadFile(`/payroll/download-payslip/${emp.id}/`, `Payslip_${emp.employee}.pdf`)}
-                                                className="text-emerald-600 hover:text-emerald-700 font-medium text-xs border border-emerald-200 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1"
+                                                className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium text-xs border border-emerald-200 dark:border-emerald-500/30 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 flex items-center gap-1 transition-colors"
                                             >
                                                 <FileText size={14} /> View
                                             </button>
@@ -514,7 +513,7 @@ const Payroll = () => {
           <div className="flex gap-4">
             <button 
                 onClick={() => setStep(1)}
-                className="flex-1 py-4 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50"
+                className="flex-1 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
                 Back
             </button>
@@ -524,7 +523,7 @@ const Payroll = () => {
                 <button 
                     onClick={handleLockPayroll}
                     disabled={isProcessing}
-                    className="flex-1 py-4 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 flex items-center justify-center gap-2"
+                    className="flex-1 py-4 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 flex items-center justify-center gap-2 transition-colors"
                 >
                     {isProcessing ? <Loader2 className="animate-spin" size={18}/> : <Lock size={18} />} Lock Payroll
                 </button>
@@ -532,7 +531,7 @@ const Payroll = () => {
 
             <button 
                 onClick={() => setStep(3)}
-                className="flex-auto w-2/3 py-4 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 flex items-center justify-center gap-2"
+                className="flex-auto w-2/3 py-4 bg-slate-900 dark:bg-emerald-600 text-white font-bold rounded-lg hover:bg-slate-800 dark:hover:bg-emerald-500 flex items-center justify-center gap-2 transition-colors"
             >
                 Continue to Disbursement <ChevronRight size={18} />
             </button>
@@ -543,24 +542,24 @@ const Payroll = () => {
       {/* --- STEP 3: DISBURSE --- */}
       {step === 3 && (
         <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center transition-colors duration-200">
                 <div>
-                    <p className="text-sm text-slate-500">Total Net Pay to Disburse</p>
-                    <h2 className="text-2xl font-bold text-emerald-600">{formatCurrency(summary.totalNetPay)}</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Total Net Pay to Disburse</p>
+                    <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(summary.totalNetPay)}</h2>
                 </div>
                 <div className="text-right">
-                    <p className="text-sm text-slate-500">Recipients</p>
-                    <h2 className="text-2xl font-bold text-slate-900">{summary.totalEmployees}</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Recipients</p>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{summary.totalEmployees}</h2>
                 </div>
             </div>
 
-            <h3 className="font-bold text-slate-900">Select Disbursement Method</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white">Select Disbursement Method</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <button 
                     onClick={handleMpesaDisbursement}
                     disabled={isProcessing}
-                    className="group relative overflow-hidden bg-emerald-500 p-8 rounded-xl text-left transition-all hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30"
+                    className="group relative overflow-hidden bg-emerald-500 dark:bg-emerald-600 p-8 rounded-xl text-left transition-all hover:bg-emerald-600 dark:hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-500/30"
                 >
                     <div className="relative z-10 text-white">
                         <Smartphone size={32} className="mb-4" />
@@ -576,7 +575,7 @@ const Payroll = () => {
                 <button 
                     onClick={handleMarkAsPaid}
                     disabled={isProcessing}
-                    className="group relative overflow-hidden bg-slate-900 p-8 rounded-xl text-left transition-all hover:bg-slate-800 hover:shadow-lg"
+                    className="group relative overflow-hidden bg-slate-900 dark:bg-slate-800 p-8 rounded-xl text-left transition-all hover:bg-slate-800 dark:hover:bg-slate-700 hover:shadow-lg dark:border dark:border-slate-700"
                 >
                     <div className="relative z-10 text-white">
                         <Building2 size={32} className="mb-4" />
@@ -588,7 +587,7 @@ const Payroll = () => {
 
             <button 
                 onClick={() => setStep(2)}
-                className="w-full py-3 text-slate-500 hover:text-slate-900 font-medium"
+                className="w-full py-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium transition-colors"
             >
                 Back to Review
             </button>
