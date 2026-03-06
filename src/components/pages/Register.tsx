@@ -4,6 +4,7 @@ import {
   User, Building2, Mail, Lock, Phone, 
   ArrowRight, Loader2, CheckCircle, Eye, EyeOff
 } from 'lucide-react';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import api from '../../api/axios';
 import { isAxiosError } from 'axios';
 
@@ -17,8 +18,8 @@ const Register = () => {
     first_name: '',
     last_name: '',
     email: '',
-    phone_number: '', // <--- REQUIRED for M-Pesa
-    company_name: '', // <--- REQUIRED for Company Model
+    phone_number: '', 
+    company_name: '', 
     password: '',
     confirm_password: ''
   });
@@ -31,7 +32,6 @@ const Register = () => {
     e.preventDefault();
     setError('');
 
-    // 1. Client-side Validation
     if (formData.password !== formData.confirm_password) {
       setError("Passwords do not match.");
       return;
@@ -44,7 +44,6 @@ const Register = () => {
     try {
       setIsLoading(true);
       
-      // 2. API Call (Updated to send all required fields)
       await api.post('/users/register/', {
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -54,16 +53,12 @@ const Register = () => {
         password: formData.password
       });
 
-      // 3. Success -> Redirect to Login
-      // We pass a state message so the Login page can show a green banner
       navigate('/login', { state: { message: "Account created successfully! Please log in to complete setup." } });
       
     } catch (err: unknown) {
       console.error("Registration Error:", err);
       if (isAxiosError(err) && err.response?.data) {
-        // Handle varied Django error formats
         const data = err.response.data;
-        // If it's a field error like { email: ["Exists"] } or generic { error: "Msg" }
         const firstError = Object.values(data)[0]; 
         setError(Array.isArray(firstError) ? firstError[0] : "Registration failed. Please check your inputs.");
       } else {
@@ -74,10 +69,30 @@ const Register = () => {
     }
   };
 
+  // --- GOOGLE AUTH HANDLER ---
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await api.post('/users/google/', {
+        credential: credentialResponse.credential,
+      });
+
+      localStorage.setItem('accessToken', response.data.access);
+      localStorage.setItem('refreshToken', response.data.refresh);
+      navigate('/');
+    } catch (err) {
+      console.error("Google Auth Failed", err);
+      setError('Google Sign-Up failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-slate-50 font-sans">
       
-      {/* LEFT SIDE: Branding & Trust (Hidden on Mobile) */}
+      {/* LEFT SIDE: Branding & Trust */}
       <div className="hidden lg:flex w-5/12 bg-slate-900 text-white flex-col justify-between p-12 relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-8">
@@ -95,7 +110,6 @@ const Register = () => {
           </p>
         </div>
 
-        {/* Value Props */}
         <div className="relative z-10 space-y-4">
           {[
             "Automated P9 & P10 Generation",
@@ -109,7 +123,6 @@ const Register = () => {
           ))}
         </div>
 
-        {/* Background Gradients */}
         <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
         <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
       </div>
@@ -129,14 +142,31 @@ const Register = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100 flex items-center gap-2 animate-in slide-in-from-top-1">
                 <span>⚠️</span> {error}
               </div>
             )}
 
-            {/* Name Fields */}
+            {/* --- GOOGLE AUTH BUTTON --- */}
+            <div className="w-full overflow-hidden rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+               <GoogleLogin
+                 onSuccess={handleGoogleSuccess}
+                 onError={() => setError('Google Sign-Up failed')}
+                 theme="outline"
+                 size="large"
+                 width="100%"
+                 text="signup_with"
+               />
+            </div>
+
+            <div className="flex items-center my-4">
+              <div className="flex-1 border-t border-slate-200"></div>
+              <span className="px-4 text-xs font-medium text-slate-400 uppercase">Or register with email</span>
+              <div className="flex-1 border-t border-slate-200"></div>
+            </div>
+            {/* ------------------------- */}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 uppercase">First Name</label>
@@ -163,7 +193,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Company & Email */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 uppercase">Company Name</label>
               <div className="relative">
@@ -193,7 +222,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Phone (Crucial for M-Pesa) */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700 uppercase">
                 Phone Number <span className="text-slate-400 font-normal">(For M-Pesa)</span>
@@ -210,7 +238,6 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Password Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 uppercase">Password</label>
@@ -266,4 +293,4 @@ const Register = () => {
   );
 };
 
-export default Register;  
+export default Register;

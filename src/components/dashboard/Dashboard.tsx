@@ -41,7 +41,7 @@ const Dashboard = () => {
       setUserPhone(userData.phone_number);
 
       // If user has NO access (Plan expired or new account), show modal
-      if (!userData.company?.has_access) {
+      if (!userData.has_access) {
           setShowSubscriptionModal(true);
       }
 

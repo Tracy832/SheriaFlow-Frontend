@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import api from '../../api/axios'; 
-import { isAxiosError } from 'axios'; // <--- Import this to fix the error handling
+import { isAxiosError } from 'axios';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -21,31 +22,47 @@ const Login = () => {
     setError('');
 
     try {
-        // 1. Make the API Call
         const response = await api.post('/token/', {
             email: formData.email,
             password: formData.password
         });
 
-        // 2. Save Tokens
         localStorage.setItem('accessToken', response.data.access);
         localStorage.setItem('refreshToken', response.data.refresh);
-
-        // 3. Redirect
         navigate('/');
 
     } catch (err) {
-        // Correct error handling logic
         if (isAxiosError(err)) {
-            // Backend returned a specific error message
             const message = err.response?.data?.detail || 'Invalid credentials';
             setError(message);
         } else {
-            // Network or other error
             setError('Something went wrong. Please try again.');
         }
     } finally {
         setIsLoading(false);
+    }
+  };
+
+  // --- GOOGLE AUTH HANDLER ---
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await api.post('/users/google/', {
+        credential: credentialResponse.credential,
+      });
+
+      // Save tokens from our Django backend
+      localStorage.setItem('accessToken', response.data.access);
+      localStorage.setItem('refreshToken', response.data.refresh);
+      
+      // Redirect to Dashboard
+      navigate('/');
+    } catch (err) {
+      console.error("Google Auth Failed on Backend", err);
+      setError('Google Sign-In failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -125,6 +142,28 @@ const Login = () => {
             )}
           </button>
         </form>
+
+        {/* --- GOOGLE AUTH SECTION --- */}
+        <div className="mt-6 flex items-center">
+          <div className="flex-1 border-t border-slate-200"></div>
+          <span className="px-4 text-sm text-slate-400 font-medium">Or continue with</span>
+          <div className="flex-1 border-t border-slate-200"></div>
+        </div>
+
+        <div className="mt-6 flex justify-center w-full">
+           <div className="w-full overflow-hidden rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError('Google Sign-In failed')}
+                useOneTap
+                theme="outline"
+                size="large"
+                width="100%"
+                text="continue_with"
+              />
+           </div>
+        </div>
+        {/* --------------------------- */}
 
         <p className="mt-6 text-center text-sm text-slate-600">
           Don't have an account? 

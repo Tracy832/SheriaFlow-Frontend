@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { clsx } from 'clsx';
+import { GoogleOAuthProvider } from '@react-oauth/google'; // <--- 1. NEW IMPORT
 
 // Layout & Common
 import Sidebar from './components/layout/Sidebar';
@@ -12,8 +13,11 @@ import Register from './components/pages/Register';
 import Dashboard from './components/dashboard/Dashboard';
 import Employees from './components/pages/Employees'; 
 import Payroll from './components/pages/Payroll';  
-import Reports from './components/pages/Reports';   
+import Reports from './components/pages/Reports';    
 import Settings from './components/pages/Settings';
+
+// --- 2. GOOGLE CLIENT ID ---
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // 1. Layout Wrapper
 const LayoutWrapper = () => {
@@ -44,24 +48,27 @@ const ProtectedRoute = () => {
 // 3. Main Router
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    // --- 3. WRAP THE ROUTER WITH THE PROVIDER ---
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/employees" element={<Employees />} /> 
-          <Route path="/payroll" element={<Payroll />} />     {/* <--- Active */}
-          <Route path="/reports" element={<Reports />} />     {/* <--- Active */}
-          <Route path="/settings" element={<Settings />} />   {/* <--- Active */}
-        </Route>
-      </Routes>
-    </Router>
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/employees" element={<Employees />} /> 
+            <Route path="/payroll" element={<Payroll />} />     
+            <Route path="/reports" element={<Reports />} />     
+            <Route path="/settings" element={<Settings />} />  
+          </Route>
+        </Routes>
+      </Router>
+    </GoogleOAuthProvider>
   );
 }
 
