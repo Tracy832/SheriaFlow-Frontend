@@ -24,6 +24,9 @@ const Register = () => {
     confirm_password: ''
   });
 
+  // Check dark mode for Google Button theme
+  const isDarkMode = document.documentElement.classList.contains('dark');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -69,7 +72,6 @@ const Register = () => {
     }
   };
 
-  // --- GOOGLE AUTH HANDLER ---
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     setIsLoading(true);
     setError('');
@@ -89,14 +91,18 @@ const Register = () => {
     }
   };
 
+  const labelClass = "text-xs font-bold text-slate-700 dark:text-slate-300 uppercase";
+  const inputClass = "w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500";
+  const inputNoIconClass = "w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500";
+
   return (
-    <div className="min-h-screen flex bg-slate-50 font-sans">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-200">
       
       {/* LEFT SIDE: Branding & Trust */}
-      <div className="hidden lg:flex w-5/12 bg-slate-900 text-white flex-col justify-between p-12 relative overflow-hidden">
+      <div className="hidden lg:flex w-5/12 bg-slate-900 dark:bg-slate-950 text-white flex-col justify-between p-12 relative overflow-hidden transition-colors border-r border-transparent dark:border-slate-800">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-slate-900">S</div>
+            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-slate-900 shadow-lg shadow-emerald-500/20">S</div>
             <span className="text-xl font-bold tracking-tight">SheriaFlow</span>
           </div>
           
@@ -118,7 +124,7 @@ const Register = () => {
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3">
               <CheckCircle className="text-emerald-500" size={20} />
-              <span className="font-medium">{item}</span>
+              <span className="font-medium text-slate-200">{item}</span>
             </div>
           ))}
         </div>
@@ -132,10 +138,10 @@ const Register = () => {
         <div className="w-full max-w-md space-y-8">
           
           <div className="text-center lg:text-left">
-            <h2 className="text-3xl font-bold text-slate-900">Create your account</h2>
-            <p className="text-slate-500 mt-2">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Create your account</h2>
+            <p className="text-slate-500 dark:text-slate-400 mt-2">
               Already have an account?{' '}
-              <Link to="/login" className="text-emerald-600 font-medium hover:text-emerald-700 hover:underline">
+              <Link to="/login" className="text-emerald-600 dark:text-emerald-400 font-medium hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline">
                 Log in
               </Link>
             </p>
@@ -143,17 +149,17 @@ const Register = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100 flex items-center gap-2 animate-in slide-in-from-top-1">
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm border border-red-100 dark:border-red-900/30 flex items-center gap-2 animate-in slide-in-from-top-1 transition-colors">
                 <span>⚠️</span> {error}
               </div>
             )}
 
             {/* --- GOOGLE AUTH BUTTON --- */}
-            <div className="w-full overflow-hidden rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div className="w-full overflow-hidden rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-md transition-all">
                <GoogleLogin
                  onSuccess={handleGoogleSuccess}
-                 onError={() => setError('Google Sign-Up failed')}
-                 theme="outline"
+                 onError={() => setError('Google Sign-In failed')}
+                 theme={isDarkMode ? "filled_blue" : "outline"}
                  size="large"
                  width="100%"
                  text="signup_with"
@@ -161,78 +167,77 @@ const Register = () => {
             </div>
 
             <div className="flex items-center my-4">
-              <div className="flex-1 border-t border-slate-200"></div>
-              <span className="px-4 text-xs font-medium text-slate-400 uppercase">Or register with email</span>
-              <div className="flex-1 border-t border-slate-200"></div>
+              <div className="flex-1 border-t border-slate-200 dark:border-slate-800"></div>
+              <span className="px-4 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase">Or register with email</span>
+              <div className="flex-1 border-t border-slate-200 dark:border-slate-800"></div>
             </div>
-            {/* ------------------------- */}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase">First Name</label>
+                <label className={labelClass}>First Name</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                  <User className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" size={18} />
                   <input 
                     name="first_name" 
                     required 
                     onChange={handleChange} 
-                    className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
+                    className={inputClass}
                     placeholder="John" 
                   />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase">Last Name</label>
+                <label className={labelClass}>Last Name</label>
                 <input 
                   name="last_name" 
                   required 
                   onChange={handleChange} 
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" 
+                  className={inputNoIconClass}
                   placeholder="Kamau" 
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 uppercase">Company Name</label>
+              <label className={labelClass}>Company Name</label>
               <div className="relative">
-                <Building2 className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                <Building2 className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" size={18} />
                 <input 
                   name="company_name" 
                   required 
                   onChange={handleChange} 
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
+                  className={inputClass}
                   placeholder="Acme Enterprises Ltd" 
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 uppercase">Work Email</label>
+              <label className={labelClass}>Work Email</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                <Mail className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" size={18} />
                 <input 
                   type="email" 
                   name="email" 
                   required 
                   onChange={handleChange} 
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
+                  className={inputClass}
                   placeholder="john@company.com" 
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 uppercase">
-                Phone Number <span className="text-slate-400 font-normal">(For M-Pesa)</span>
+              <label className={labelClass}>
+                Phone Number <span className="text-slate-400 dark:text-slate-500 font-normal lowercase">(For M-Pesa)</span>
               </label>
               <div className="relative">
-                <Phone className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                <Phone className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" size={18} />
                 <input 
                   name="phone_number" 
                   required 
                   onChange={handleChange} 
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
+                  className={inputClass}
                   placeholder="0712345678" 
                 />
               </div>
@@ -240,34 +245,34 @@ const Register = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase">Password</label>
+                <label className={labelClass}>Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 text-slate-400" size={18} />
+                  <Lock className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" size={18} />
                   <input 
                     type={showPassword ? "text" : "password"}
                     name="password" 
                     required 
                     onChange={handleChange} 
-                    className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
+                    className="w-full pl-10 pr-10 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     placeholder="••••••••" 
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase">Confirm</label>
+                <label className={labelClass}>Confirm</label>
                 <input 
                   type="password" 
                   name="confirm_password" 
                   required 
                   onChange={handleChange} 
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" 
+                  className={inputNoIconClass}
                   placeholder="••••••••" 
                 />
               </div>
@@ -276,14 +281,14 @@ const Register = () => {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 flex items-center justify-center gap-2 mt-6"
+              className="w-full bg-slate-900 dark:bg-emerald-600 text-white font-bold py-3 rounded-lg hover:bg-slate-800 dark:hover:bg-emerald-500 transition-all shadow-lg shadow-slate-900/10 dark:shadow-emerald-900/20 flex items-center justify-center gap-2 mt-6 active:scale-[0.98]"
             >
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Create Account'} 
+              {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'Create Account'} 
               {!isLoading && <ArrowRight size={18} />}
             </button>
 
-            <p className="text-center text-xs text-slate-400 mt-4">
-              By registering, you agree to our <a href="#" className="underline hover:text-slate-600">Terms</a> and <a href="#" className="underline hover:text-slate-600">Privacy Policy</a>.
+            <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-4">
+              By registering, you agree to our <a href="#" className="underline hover:text-slate-600 dark:hover:text-slate-300">Terms</a> and <a href="#" className="underline hover:text-slate-600 dark:hover:text-slate-300">Privacy Policy</a>.
             </p>
 
           </form>

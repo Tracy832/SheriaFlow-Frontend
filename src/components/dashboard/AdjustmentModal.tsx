@@ -92,17 +92,19 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
     }
   };
 
+  const inputClass = "w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors";
+
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700 transition-colors">
         
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 transition-colors">
           <div>
-            <h3 className="font-bold text-slate-900 text-lg">Adjust Pay</h3>
-            <p className="text-slate-500 text-xs">For {employeeName}</p>
+            <h3 className="font-bold text-slate-900 dark:text-white text-lg">Adjust Pay</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-xs">For {employeeName}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-500">
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-slate-400">
             <X size={20} />
           </button>
         </div>
@@ -110,26 +112,26 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
         <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
           
           {/* Active Adjustments List */}
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Active Adjustments</h4>
+          <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 transition-colors">
+            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Active Adjustments</h4>
             
             {fetching ? (
-              <div className="text-center py-4 text-slate-400"><Loader2 size={16} className="animate-spin mx-auto" /></div>
+              <div className="text-center py-4 text-slate-400 dark:text-slate-500"><Loader2 size={16} className="animate-spin mx-auto" /></div>
             ) : existingAdjustments.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">No manual adjustments for this month.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 italic">No manual adjustments for this month.</p>
             ) : (
               <div className="space-y-2">
                 {existingAdjustments.map(adj => (
-                  <div key={adj.id} className="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                  <div key={adj.id} className="flex items-center justify-between bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
                     <div>
-                      <p className="text-sm font-bold text-slate-900">{adj.name}</p>
-                      <p className={`text-xs font-medium ${adj.type === 'EARNING' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <p className="text-sm font-bold text-slate-900 dark:text-slate-200">{adj.name}</p>
+                      <p className={`text-xs font-medium ${adj.type === 'EARNING' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                         {adj.type === 'EARNING' ? '+' : '-'} KES {Number(adj.amount).toLocaleString()}
                       </p>
                     </div>
                     <button 
                       onClick={() => handleDelete(adj.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
                       title="Remove and Revert Math"
                     >
                       <Trash2 size={16} />
@@ -142,10 +144,10 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
 
           {/* Add New Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Add New</h4>
+            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Add New</h4>
             
             {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm border border-red-100">
+              <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm border border-red-100 dark:border-red-500/20 transition-colors">
                 {error}
               </div>
             )}
@@ -156,8 +158,8 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
                 <label className={`
                   cursor-pointer border rounded-lg p-3 text-center transition-all
                   ${formData.type === 'EARNING' 
-                    ? 'bg-emerald-50 border-emerald-500 text-emerald-700 font-bold ring-1 ring-emerald-500' 
-                    : 'border-slate-200 hover:border-slate-300 text-slate-600'}
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 dark:border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold ring-1 ring-emerald-500' 
+                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300'}
                 `}>
                   <input 
                     type="radio" 
@@ -173,8 +175,8 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
                 <label className={`
                   cursor-pointer border rounded-lg p-3 text-center transition-all
                   ${formData.type === 'DEDUCTION' 
-                    ? 'bg-red-50 border-red-500 text-red-700 font-bold ring-1 ring-red-500' 
-                    : 'border-slate-200 hover:border-slate-300 text-slate-600'}
+                    ? 'bg-red-50 dark:bg-red-500/10 border-red-500 dark:border-red-500 text-red-700 dark:text-red-400 font-bold ring-1 ring-red-500' 
+                    : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 text-slate-600 dark:text-slate-300'}
                 `}>
                   <input 
                     type="radio" 
@@ -191,11 +193,11 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
 
             {/* Details */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description</label>
               <input 
                 type="text" 
                 placeholder="e.g. Christmas Bonus" 
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200"
+                className={inputClass}
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
                 required
@@ -203,11 +205,11 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Amount (KES)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount (KES)</label>
               <input 
                 type="number" 
                 placeholder="0.00" 
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-200 font-bold text-slate-800"
+                className={`${inputClass} font-bold`}
                 value={formData.amount}
                 onChange={e => setFormData({...formData, amount: e.target.value})}
                 required
@@ -219,14 +221,14 @@ const AdjustmentsModal = ({ runId, employeeId, employeeName, onClose, onSave }: 
               <button 
                 type="button" 
                 onClick={onClose}
-                className="flex-1 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 border border-slate-300 rounded-lg"
+                className="flex-1 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg transition-colors"
               >
                 Done
               </button>
               <button 
                 type="submit" 
                 disabled={loading}
-                className="flex-2 py-2.5 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg flex items-center justify-center gap-2 disabled:opacity-70"
+                className="flex-2 px-6 py-2.5 text-sm font-bold text-white bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 rounded-lg flex items-center justify-center gap-2 disabled:opacity-70 transition-colors"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
                 {loading ? 'Saving...' : 'Add Adjustment'}

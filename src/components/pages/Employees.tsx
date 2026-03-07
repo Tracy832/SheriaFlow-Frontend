@@ -65,7 +65,6 @@ const Employees = () => {
       setEmployees(prev => prev.filter(emp => emp.id !== id));
       setOpenMenuId(null);
     } catch (error) {
-      // FIX 1: Log the error to satisfy ESLint
       console.error("Delete failed:", error); 
       alert("Failed to delete employee.");
     }
@@ -83,7 +82,6 @@ const Employees = () => {
       ));
       setOpenMenuId(null);
     } catch (error) {
-      // FIX 2: Log the error to satisfy ESLint
       console.error("Status update failed:", error);
       alert("Failed to update status.");
     }
@@ -95,7 +93,7 @@ const Employees = () => {
   const inactiveEmployees = totalEmployees - activeEmployees;
 
   return (
-    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    <div className="p-8 space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-500 text-slate-900 dark:text-slate-100">
       
       {/* Add Employee Modal */}
       {showAddModal && (
@@ -113,15 +111,14 @@ const Employees = () => {
         <Header 
           title="Employees" 
           subtitle="Manage your team members and their account details"
-          user={{ name: "John Kamau", role: "Admin", initials: "JK" }}
         />
         <div className="flex gap-3">
-           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 font-medium transition-colors">
+           <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors duration-200">
              <Filter size={18} /> Export CSV
            </button>
            <button 
              onClick={() => setShowAddModal(true)}
-             className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 font-medium shadow-lg shadow-slate-900/20 transition-all active:scale-95"
+             className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-emerald-600 text-white rounded-lg hover:bg-slate-800 dark:hover:bg-emerald-500 font-medium shadow-lg shadow-slate-900/20 dark:shadow-emerald-900/20 transition-all active:scale-95 duration-200"
            >
              <Plus size={18} /> Add Employee
            </button>
@@ -130,51 +127,51 @@ const Employees = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center transition-colors duration-200">
            <div>
-              <p className="text-sm text-slate-500 font-medium">Total Employees</p>
-              <h3 className="text-3xl font-bold text-slate-900 mt-1">{totalEmployees}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Total Employees</p>
+              <h3 className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{totalEmployees}</h3>
            </div>
-           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+           <div className="p-3 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
               <UserCheck size={24} />
            </div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center transition-colors duration-200">
            <div>
-              <p className="text-sm text-slate-500 font-medium">Active Now</p>
-              <h3 className="text-3xl font-bold text-slate-900 mt-1">{activeEmployees}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Active Now</p>
+              <h3 className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{activeEmployees}</h3>
            </div>
            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
         </div>
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex justify-between items-center transition-colors duration-200">
            <div>
-              <p className="text-sm text-slate-500 font-medium">Inactive / On Leave</p>
-              <h3 className="text-3xl font-bold text-slate-900 mt-1">{inactiveEmployees}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Inactive / On Leave</p>
+              <h3 className="text-3xl font-bold text-slate-900 dark:text-white mt-1">{inactiveEmployees}</h3>
            </div>
            <div className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      {/* Search Bar & Table Container */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden min-h-[400px] transition-colors duration-200">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50 transition-colors duration-200">
            <div className="relative w-full max-w-md">
-              <Search size={18} className="absolute left-3 top-2.5 text-slate-400" />
+              <Search size={18} className="absolute left-3 top-2.5 text-slate-400 dark:text-slate-500" />
               <input 
                 type="text" 
                 placeholder="Search by name, role, or email..." 
-                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500 bg-white" 
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-sm focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-colors" 
               />
            </div>
-           <button className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900">
+           <button className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
               <Filter size={16} /> All Status
            </button>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-slate-900 font-semibold border-b border-slate-200 uppercase tracking-wider text-xs">
+          <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+            <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-slate-200 font-semibold border-b border-slate-200 dark:border-slate-700 uppercase tracking-wider text-xs transition-colors duration-200">
               <tr>
                 <th className="p-5">Employee</th>
                 <th className="p-5">Contact Info</th>
@@ -184,22 +181,22 @@ const Employees = () => {
                 <th className="p-5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
               {isLoading ? (
-                 <tr><td colSpan={6} className="p-10 text-center text-slate-500">Loading employees...</td></tr>
+                 <tr><td colSpan={6} className="p-10 text-center text-slate-500 dark:text-slate-400">Loading employees...</td></tr>
               ) : employees.length === 0 ? (
-                 <tr><td colSpan={6} className="p-10 text-center text-slate-500">No employees found.</td></tr>
+                 <tr><td colSpan={6} className="p-10 text-center text-slate-500 dark:text-slate-400">No employees found.</td></tr>
               ) : (
                 employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <tr key={emp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
                     <td className="p-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+                        <div className="w-10 h-10 rounded-full bg-slate-900 dark:bg-slate-700 text-white flex items-center justify-center font-bold text-sm">
                           {emp.first_name[0]}{emp.last_name[0]}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900">{emp.first_name} {emp.last_name}</p>
-                          <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+                          <p className="font-bold text-slate-900 dark:text-white">{emp.first_name} {emp.last_name}</p>
+                          <div className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                              <MapPin size={10} /> Nairobi
                           </div>
                         </div>
@@ -208,28 +205,28 @@ const Employees = () => {
                     <td className="p-5">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs">
-                           <Mail size={12} className="text-slate-400" /> {emp.email || 'N/A'}
+                           <Mail size={12} className="text-slate-400 dark:text-slate-500" /> {emp.email || 'N/A'}
                         </div>
                         <div className="flex items-center gap-2 text-xs">
-                           <Phone size={12} className="text-slate-400" /> {emp.phone_number || 'N/A'}
+                           <Phone size={12} className="text-slate-400 dark:text-slate-500" /> {emp.phone_number || 'N/A'}
                         </div>
                       </div>
                     </td>
                     <td className="p-5">
-                      <p className="font-medium text-slate-900">{emp.role}</p>
-                      <p className="text-xs text-slate-500">{emp.department}</p>
+                      <p className="font-medium text-slate-900 dark:text-slate-200">{emp.role}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{emp.department}</p>
                     </td>
                     <td className="p-5">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
                         emp.is_active 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                          : 'bg-amber-50 text-amber-700 border-amber-100'
+                          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' 
+                          : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-500/20'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${emp.is_active ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
                         {emp.is_active ? 'Active' : 'On Leave'}
                       </span>
                     </td>
-                    <td className="p-5 text-slate-500">
+                    <td className="p-5 text-slate-500 dark:text-slate-400">
                        {new Date(emp.created_at).toLocaleDateString()}
                     </td>
                     
@@ -240,7 +237,7 @@ const Employees = () => {
                            e.stopPropagation();
                            setOpenMenuId(openMenuId === emp.id ? null : emp.id);
                         }}
-                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       >
                         <MoreHorizontal size={20} />
                       </button>
@@ -249,19 +246,19 @@ const Employees = () => {
                       {openMenuId === emp.id && (
                         <div 
                           ref={menuRef}
-                          className="absolute right-10 top-8 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                          className="absolute right-10 top-8 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
                         >
                           <div className="py-1">
                             <button 
                               onClick={() => handleToggleStatus(emp)}
-                              className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2"
+                              className="w-full text-left px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white flex items-center gap-2 transition-colors"
                             >
                               {emp.is_active ? <UserX size={16} /> : <UserCheck size={16} />}
                               {emp.is_active ? 'Mark On Leave' : 'Activate Employee'}
                             </button>
                             <button 
                               onClick={() => handleDelete(emp.id)}
-                              className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t border-slate-100"
+                              className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700 transition-colors"
                             >
                               <Trash2 size={16} /> Delete Employee
                             </button>
